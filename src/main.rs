@@ -1,3 +1,5 @@
+extern crate which;
+
 mod pythons;
 
 fn main() {
