@@ -5,41 +5,26 @@ extern crate shlex;
 extern crate tempdir;
 extern crate which;
 
+mod args;
 mod pythons;
 mod vendors;
 
-fn venv_prompt() -> Option<String> {
-    let cwd = std::env::current_dir().ok()?;
-    let cwd = cwd.canonicalize().unwrap_or(cwd);
-    Some(cwd.file_name()?.to_string_lossy().into_owned())
-}
+use args::Sub;
 
 fn main() {
-    let opts = app_from_crate!()
-        .arg(clap::Arg::with_name("py_cmd")
-            .long("py")
-            .help("Python interpreter to use")
-            .required(true)
-            .takes_value(true)
-        )
-        .arg(clap::Arg::with_name("env_dir")
-            .long("to")
-            .help("Directory to create environment at")
-            .required(true)
-            .takes_value(true)
-        )
-        .get_matches();
+    let opts = args::Options::new();
+    let interpreter = opts.interpreter().expect("interpreter unavailable");
 
-    let py_cmd = opts.value_of("py_cmd").expect("required arg");
-
-    let py_args = shlex::split(py_cmd).unwrap();
-    let python = pythons::Interpreter::discover(
-        py_args.get(0).unwrap(),
-        py_args.get(1..).unwrap(),
-    ).expect("Python not found");
-
-    python.create_venv(
-        &std::path::Path::new(opts.value_of("env_dir").expect("required arg")),
-        &venv_prompt().unwrap_or(String::from("venv")),
-    ).expect("Cannot create venv");
+    match opts.sub_options() {
+        Sub::Init(init_opts) => {
+            let mut envdir = init_opts.project_root();
+            envdir.push("__pypackages__");
+            envdir.push(interpreter.compatibility_tag().unwrap());
+            let prompt = init_opts.project_name()
+                .unwrap_or(String::from("venv"));
+            interpreter.create_venv(&envdir, &prompt)
+                .expect("Cannot create venv");
+        },
+        Sub::None => {},
+    }
 }

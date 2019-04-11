@@ -2,6 +2,8 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import urllib.request
+import zipfile
 
 
 def _remove(p):
@@ -38,10 +40,22 @@ def _populate(root):
             _remove(path)
 
 
+def _populate_pep425(root):
+    fn, _ = urllib.request.urlretrieve(
+        "https://github.com/brettcannon/pep425/archive/master.zip",
+    )
+    with zipfile.ZipFile(fn) as zf:
+        data = zf.read("pep425-master/pep425.py")
+        root.joinpath("pep425.py").write_bytes(data)
+    pathlib.Path(fn).unlink()
+
+
 def main():
-    for p in pathlib.Path(__file__).parent.iterdir():
+    assets_root = pathlib.Path(__file__).parent
+    for p in assets_root.iterdir():
         if p.is_dir():
             _populate(p)
+    _populate_pep425(assets_root.joinpath("pep425"))
 
 
 if __name__ == '__main__':

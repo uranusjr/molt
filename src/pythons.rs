@@ -7,7 +7,7 @@ use std::process::Command;
 use tempdir::TempDir;
 use which;
 
-use crate::vendors::VirtEnv;
+use crate::vendors;
 
 #[derive(Debug)]
 pub enum Error {
@@ -40,13 +40,20 @@ impl From<which::Error> for Error {
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 
 fn command(program: &Path) -> Command {
     let mut cmd = Command::new(program);
     cmd.env("PYTHONIOENCODING", "utf-8");
     cmd
+}
+
+fn interpret(program: &Path, code: &str, pkgs: &Path) -> Result<Command> {
+    let mut cmd = command(program);
+    cmd.env("PYTHONPATH", pkgs.to_str().ok_or(Error::UnrepresentableError)?);
+    cmd.args(&["-c", &code]);
+    Ok(cmd)
 }
 
 
@@ -68,14 +75,13 @@ impl Interpreter {
             ])
             .output()?;
 
-        // This cannot fail because we told the interpreter to use UTF-8.
         let location = PathBuf::from(String::from_utf8(out.stdout).unwrap());
         Ok(Self { location: location })
     }
 
     pub fn create_venv(&self, env_dir: &Path, prompt: &str) -> Result<()> {
-        let tmp_dir = TempDir::new("molt-venv")?;
-        VirtEnv::populate_to(tmp_dir.path())?;
+        let tmp_dir = TempDir::new("molt-virtenv")?;
+        vendors::VirtEnv::populate_to(tmp_dir.path())?;
 
         let code = format!(
             "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",
@@ -84,14 +90,29 @@ impl Interpreter {
         );
 
         // TODO: Show message based on status code.
-        let _status = command(&self.location)
-            .env("PYTHONPATH",
-                 tmp_dir.path().to_str().ok_or(Error::UnrepresentableError)?)
-            .args(&["-c", &code])
+        let _status = interpret(&self.location, &code, tmp_dir.path())?
             .spawn()?
             .wait()?;
-
         Ok(())
+    }
+
+    pub fn compatibility_tag(&self) -> Result<String> {
+        let tmp_dir = TempDir::new("molt-pep425")?;
+        vendors::Pep425::populate_to(tmp_dir.path())?;
+
+        let out = interpret(
+            &self.location,
+            "from __future__ import print_function; \
+             import pep425; print(next(pep425.sys_tags()), end='')",
+            tmp_dir.path(),
+        )?.output()?;
+
+        let val = String::from_utf8(out.stdout).unwrap();
+        if val.is_empty() {
+            Err(Error::UnrepresentableError)
+        } else {
+            Ok(val)
+        }
     }
 }
 
