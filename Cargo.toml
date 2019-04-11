@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Tzu-ping Chung <uranusjr@gmail.com>"]
 
 [dependencies]
+which = "2.0.1"
