@@ -14,9 +14,10 @@ def _remove(p):
 
 
 BLACKLIST_PATTERNS = [
-    "bin",
-    "Scripts",
-    "**/__pycache__",
+    "bin/",
+    "Scripts/",
+    "**/__pycache__/",
+    "**/*.py[co]",
 ]
 
 
