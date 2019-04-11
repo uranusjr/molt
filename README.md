@@ -37,6 +37,11 @@ entry point scripts.
 
 Note that only commands installed via entry points work with `molt run`.
 
+`molt run --py=<command>` is treated specially to provide access to the base
+interpreter. For example, `molt run --py=python3.6 myscript.py` would use
+interpreter `python3.6` (looked up in PATH) to execute file `myscript.py`. You
+can provide a relative or absolute path as a command.
+
 
 ### `molt lock`
 
@@ -45,7 +50,7 @@ Generate `molt.lock.json` from the manidest.
 
 ### `molt latest`
 
-Lists latest version (globally and compatible) of a package on the package
+List latest version (globally and compatible) of a package on the package
 index. Useful if you want to add a pinned package to the manifest, but don’t
 immediately know what version to use.
 
@@ -67,19 +72,14 @@ TODO. This would be a more inclusive proposal based on discussions on
 
 ### Other project management tools
 
-`molt install` from `Pipfile.lock` or `poetry.lock` is supported (behaviour is
-undetermined if both are found) by converting them to `molt.lock.json`, and
-install from that.
+`molt install` from `Pipfile.lock`, `poetry.lock`, or `requirements.txt` is
+supported. The former two have precedence over `requirements.txt`; behaviour is
+undetermined if both are found. This is done by converting them to
+`molt.lock.json`, and install from that.
 
-Tip: The auto-generated molt lock file can be ignored locally by adding it to
+Tip: The auto-generated `molt.lock.json` can be ignored locally by adding it to
 the project’s `.git/info/exclude`, so you can use Molt to develop Pipenv or
 Poetry projects without converting wholesale.
 
-Note that locking into `Pipfile.lock` and `poetry.lock` is not supported.
-You’ll need to use those tools to generate a new lock file.
-
-Molt will try to warn you if it finds you’re running Molt commands (other than
-`init`, `install`, and `run`) in a Pipenv or Poetry project:
-
-* If a `Pipfile` is found.
-* If a `pyproject.toml` is found containing `[tool.poetry]` fields.
+Locking into those files is not supported. You’ll need to use the respective
+tool to generate a new lock file.
