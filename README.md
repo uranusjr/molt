@@ -2,7 +2,17 @@
 
 Work in progress.
 
-## Intended usages
+## Specify a Python
+
+All subcommands take a `--py=<python-command>` option before the subcommand
+that specifies the Python to use. The Python command is looked up in PATH, or
+it can be a path (either relative or absolute).
+
+An environment variable `MOLT_PY` can be set to specify the Python command to
+use if this is not provided.
+
+
+## Subcommands
 
 ### `molt init`
 
@@ -37,10 +47,11 @@ entry point scripts.
 
 Note that only commands installed via entry points work with `molt run`.
 
-`molt run --py=<command>` is treated specially to provide access to the base
-interpreter. For example, `molt run --py=python3.6 myscript.py` would use
-interpreter `python3.6` (looked up in PATH) to execute file `myscript.py`. You
-can provide a relative or absolute path as a command.
+
+### `molt py`
+
+Access the base interpreter. For example, `molt --py=python3.6 py myscript.py`
+would use interpreter `python3.6` to execute file `myscript.py`.
 
 
 ### `molt lock`
