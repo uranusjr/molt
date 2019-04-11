@@ -1,7 +1,6 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate rust_embed;
 
-extern crate shlex;
 extern crate tempdir;
 extern crate which;
 

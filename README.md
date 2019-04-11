@@ -5,8 +5,12 @@ Work in progress.
 ## Specify a Python
 
 All subcommands take a `--py=<python-command>` option before the subcommand
-that specifies the Python to use. The Python command is looked up in PATH, or
-it can be a path (either relative or absolute).
+that specifies the Python to use. The Python command can be:
+
+* Prefixed by a dash (e.g. `-3.6`). This is passed directly to the Python
+  launcher (`py` command) if available.
+* Treated as a path if containing path separators.
+* A command to be looked up in PATH.
 
 
 ## Subcommands

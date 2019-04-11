@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
-use shlex;
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
 use crate::pythons::{self, Interpreter};
 
 fn app<'a, 'b>() -> App<'a, 'b> {
     app_from_crate!()
-        .arg(Arg::with_name("py_cmd")
+        .setting(AppSettings::AllowLeadingHyphen)
+        .arg(Arg::with_name("py")
             .long("py")
             .help("Python interpreter to use")
             .required(true)
@@ -36,9 +36,13 @@ impl<'a> Options<'a> {
     }
 
     pub fn interpreter(&self) -> pythons::Result<Interpreter> {
-        let cmd = self.matches.value_of("py_cmd").expect("required");
-        let args = shlex::split(cmd).unwrap_or_else(|| vec![String::new()]);
-        Interpreter::discover(args.get(0).unwrap(), args.get(1..).unwrap())
+        let py = self.matches.value_of("py").expect("required");
+        let (prog, args) = if py.starts_with("-") {
+            ("py", vec![py])
+        } else {
+            (py, vec![])
+        };
+        Interpreter::discover(prog, args)
     }
 
     pub fn sub_options(&self) -> Sub {
