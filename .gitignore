@@ -1,2 +1,6 @@
 /target
+/vendor/*
+
+!/vendor/requirements.txt
+
 **/*.rs.bk
