@@ -8,9 +8,6 @@ All subcommands take a `--py=<python-command>` option before the subcommand
 that specifies the Python to use. The Python command is looked up in PATH, or
 it can be a path (either relative or absolute).
 
-An environment variable `MOLT_PY` can be set to specify the Python command to
-use if this is not provided.
-
 
 ## Subcommands
 

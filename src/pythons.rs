@@ -7,7 +7,7 @@ use std::process::Command;
 use tempdir::TempDir;
 use which;
 
-use crate::vendors::Vendor;
+use crate::vendors::VirtEnv;
 
 #[derive(Debug)]
 pub enum Error {
@@ -75,7 +75,7 @@ impl Interpreter {
 
     pub fn create_venv(&self, env_dir: &Path, prompt: &str) -> Result<()> {
         let tmp_dir = TempDir::new("molt-venv")?;
-        Vendor::populate_to(tmp_dir.path())?;
+        VirtEnv::populate_to(tmp_dir.path())?;
 
         let code = format!(
             "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",

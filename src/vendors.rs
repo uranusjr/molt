@@ -3,10 +3,10 @@ use std::io::{Result, Write};
 use std::path::Path;
 
 #[derive(RustEmbed)]
-#[folder = "vendor/"]
-pub struct Vendor;
+#[folder = "assets/virtenv"]
+pub struct VirtEnv;
 
-impl Vendor {
+impl VirtEnv {
     pub fn populate_to(dir: &Path) -> Result<()> {
         for e in Self::iter() {
             let filename = e.into_owned();
