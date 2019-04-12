@@ -6,17 +6,29 @@ use crate::pythons::{self, Interpreter};
 
 fn app<'a, 'b>() -> App<'a, 'b> {
     app_from_crate!()
-        .setting(AppSettings::AllowLeadingHyphen)
+        .setting(AppSettings::ArgRequiredElseHelp)
         .arg(Arg::with_name("py")
-            .long("py")
             .help("Python interpreter to use")
+            .index(1)
             .required(true)
-            .takes_value(true)
+            .allow_hyphen_values(true)
         )
         .subcommand(SubCommand::with_name("init")
             .about("Initialize an environment for project")
-            .arg(Arg::with_name("project_root")
+            .arg(Arg::with_name("project")
                 .help("Path to project root directory")
+                .required(true)
+            )
+        )
+        .subcommand(SubCommand::with_name("run")
+            .about("Run a command in the environment")
+            .arg(Arg::with_name("command")
+                .help("Command to run")
+                .required(true)
+            )
+            .arg(Arg::with_name("args")
+                .help("Arguments to command")
+                .multiple(true)
             )
         )
 }
@@ -24,6 +36,7 @@ fn app<'a, 'b>() -> App<'a, 'b> {
 pub enum Sub<'a> {
     None,
     Init(InitOptions<'a>),
+    Run(RunOptions<'a>)
 }
 
 pub struct Options<'a> {
@@ -42,12 +55,13 @@ impl<'a> Options<'a> {
         } else {
             (py, vec![])
         };
-        Interpreter::discover(prog, args)
+        Interpreter::discover(py, prog, args)
     }
 
     pub fn sub_options(&self) -> Sub {
         match self.matches.subcommand_name() {
             Some("init") => Sub::Init(InitOptions::new(&self.matches)),
+            Some("run") => Sub::Run(RunOptions::new(&self.matches)),
             _ => Sub::None,
         }
     }
@@ -63,12 +77,30 @@ impl<'a> InitOptions<'a> {
     }
 
     pub fn project_root(&self) -> PathBuf {
-        PathBuf::from(self.matches.value_of("project_root").expect("required"))
+        PathBuf::from(self.matches.value_of("project").expect("required"))
     }
 
     pub fn project_name(&self) -> Option<String> {
         let root = self.project_root();
         let root = root.canonicalize().unwrap_or(root);
         root.file_name().map(|n| n.to_string_lossy().into_owned())
+    }
+}
+
+pub struct RunOptions<'a> {
+    matches: &'a ArgMatches<'a>,
+}
+
+impl<'a> RunOptions<'a> {
+    fn new(parent: &'a ArgMatches) -> Self {
+        Self { matches: parent.subcommand_matches("run").unwrap() }
+    }
+
+    pub fn command(&self) -> &str {
+        self.matches.value_of("command").expect("required")
+    }
+
+    pub fn args(&self) -> Vec<&str> {
+        self.matches.values_of("args").unwrap_or_default().collect()
     }
 }

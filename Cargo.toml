@@ -5,6 +5,7 @@ authors = ["Tzu-ping Chung <uranusjr@gmail.com>"]
 
 [dependencies]
 clap = "2.33.0"
+unindent = "0.1.3"
 rust-embed = "4.3.0"
 rust-ini = "0.13.0"
 tempdir = "0.3.7"

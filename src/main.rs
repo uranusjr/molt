@@ -3,10 +3,12 @@
 
 extern crate ini;
 extern crate tempdir;
+extern crate unindent;
 extern crate which;
 
 mod args;
 mod entrypoints;
+mod projects;
 mod pythons;
 mod vendors;
 
@@ -17,15 +19,25 @@ fn main() {
     let interpreter = opts.interpreter().expect("interpreter unavailable");
 
     match opts.sub_options() {
+        Sub::None => {},
         Sub::Init(init_opts) => {
-            let mut envdir = init_opts.project_root();
-            envdir.push("__pypackages__");
-            envdir.push(interpreter.compatibility_tag().unwrap());
+            let envdir = init_opts.project_root()
+                .join("__pypackages__")
+                .join(interpreter.compatibility_tag()
+                    .expect("TODO: Fail gracefully if Python call fails."));
             let prompt = init_opts.project_name()
                 .unwrap_or(String::from("venv"));
             interpreter.create_venv(&envdir, &prompt)
                 .expect("Cannot create venv");
         },
-        Sub::None => {},
+        Sub::Run(run_opts) => {
+            let project = projects::Project::find_from_cwd(interpreter)
+                .expect("TODO: Fail gracefully when project is not found.");
+            let status = project.run(run_opts.command(), run_opts.args())
+                .expect("TODO: Fail gracefully when run fails.");
+
+            // TODO: What error should we use if the command fails to execute?
+            std::process::exit(status.code().unwrap_or(-1));
+        },
     }
 }

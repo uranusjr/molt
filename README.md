@@ -4,13 +4,26 @@ Work in progress.
 
 ## Specify a Python
 
-All subcommands take a `--py=<python-command>` option before the subcommand
-that specifies the Python to use. The Python command can be:
+All subcommands take a position argument *before* it to specify the Python to
+use. The Python command can be:
 
 * Prefixed by a dash (e.g. `-3.6`). This is passed directly to the Python
   launcher (`py` command) if available.
 * Treated as a path if containing path separators.
 * A command to be looked up in PATH.
+
+Examples:
+
+```bash
+# Runs "init" by invoking `py -2` as Python.
+molt -2 init
+
+# Runs "run" by invoking the specified executable.
+molt /usr/bin/python run
+
+# Runs "init" by looking up `python3.6` in PATH.
+molt python3.6 init
+```
 
 
 ## Subcommands
