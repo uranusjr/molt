@@ -2,6 +2,7 @@ use std::collections::{HashMap, hash_map};
 use std::path::Path;
 
 use ini::Ini;
+use regex::Regex;
 
 pub struct EntryPoint {
     modu: String,
@@ -29,6 +30,13 @@ impl EntryPoint {
     }
 }
 
+lazy_static! {
+    static ref PIP_RE: Regex =
+        Regex::new(r"^pip\d+(\.\d+)?$").unwrap();
+    static ref EASY_INSTALL_RE: Regex =
+        Regex::new(r"^easy_install\-\d+(\.\d+)?$").unwrap();
+}
+
 fn read_entry_points(distro: &Path) -> Option<HashMap<String, EntryPoint>> {
     if !distro.is_dir() {
         return None;
@@ -50,9 +58,11 @@ fn read_entry_points(distro: &Path) -> Option<HashMap<String, EntryPoint>> {
             _ => { continue; },
         };
         for (key, value) in properties.iter() {
-            // TODO: We need to blacklist versioned pip and easy_install entry
-            // points because they have fake entries. (!)
+            // Blacklist versioned pip and easy_install entries.
             // github.com/pypa/pip/blob/54b6a91/src/pip/_internal/wheel.py#L507
+            if PIP_RE.is_match(key) || EASY_INSTALL_RE.is_match(key) {
+                continue;
+            }
             let entry_point = match EntryPoint::parse(value, gui) {
                 Some(v) => v,
                 None => { continue; },
