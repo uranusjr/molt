@@ -1,10 +1,12 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate rust_embed;
 
+extern crate ini;
 extern crate tempdir;
 extern crate which;
 
 mod args;
+mod entrypoints;
 mod pythons;
 mod vendors;
 
