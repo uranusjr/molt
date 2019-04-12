@@ -15,6 +15,14 @@ fn app<'a, 'b>() -> App<'a, 'b> {
             .takes_value(true)
             .allow_hyphen_values(true)
         )
+        .subcommand(SubCommand::with_name("show")
+            .about("Print project information")
+            .setting(AppSettings::ArgRequiredElseHelp)
+            .arg(Arg::with_name("env")
+                .long("env")
+                .help("Path to the environment")
+            )
+        )
         .subcommand(SubCommand::with_name("init")
             .about("Initialize an environment for project")
             .arg(Arg::with_name("project")
@@ -49,6 +57,7 @@ pub enum Sub<'a> {
     Init(InitOptions<'a>),
     Run(RunOptions<'a>),
     Py(PyOptions<'a>),
+    Show(ShowOptions<'a>),
 }
 
 pub struct Options<'a> {
@@ -72,10 +81,12 @@ impl<'a> Options<'a> {
 
     pub fn sub_options(&self) -> Sub {
         match self.matches.subcommand_name() {
+            None => Sub::None,
             Some("init") => Sub::Init(InitOptions::new(&self.matches)),
             Some("run") => Sub::Run(RunOptions::new(&self.matches)),
             Some("py") => Sub::Py(PyOptions::new(&self.matches)),
-            _ => Sub::None,
+            Some("show") => Sub::Show(ShowOptions::new(&self.matches)),
+            Some(n) => { panic!("unhandled subcommand {:?}", n); },
         }
     }
 }
@@ -129,5 +140,27 @@ impl<'a> PyOptions<'a> {
 
     pub fn args(&self) -> Vec<&str> {
         self.matches.values_of("args").unwrap_or_default().collect()
+    }
+}
+
+pub enum ShowWhat {
+    Env,
+}
+
+pub struct ShowOptions<'a> {
+    matches: &'a ArgMatches<'a>,
+}
+
+impl<'a> ShowOptions<'a> {
+    fn new(parent: &'a ArgMatches) -> Self {
+        Self { matches: parent.subcommand_matches("show").unwrap() }
+    }
+
+    pub fn what(&self) -> ShowWhat {
+        if self.matches.is_present("env") {
+            ShowWhat::Env
+        } else {
+            panic!("one of the options should present");
+        }
     }
 }

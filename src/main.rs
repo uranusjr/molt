@@ -3,6 +3,7 @@
 #[macro_use] extern crate prettytable;
 #[macro_use] extern crate rust_embed;
 
+extern crate dunce;
 extern crate ini;
 extern crate regex;
 extern crate tempdir;
@@ -23,6 +24,17 @@ fn main() {
 
     match opts.sub_options() {
         args::Sub::None => {},
+        args::Sub::Show(show_opts) => {
+            let project = projects::Project::find_from_cwd(interpreter)
+                .expect("TODO: Fail gracefully when project is not found.");
+            match show_opts.what() {
+                args::ShowWhat::Env => {
+                    let env = project.presumed_env_root().unwrap();
+                    println!("{}", dunce::simplified(&env).display());
+                },
+            }
+            std::process::exit(0);
+        },
         args::Sub::Init(init_opts) => {
             let envdir = init_opts.project_root()
                 .join("__pypackages__")

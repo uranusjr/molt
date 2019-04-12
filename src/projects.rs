@@ -80,12 +80,13 @@ impl Project {
         Self::find(&current_dir()?, interpreter)
     }
 
-    pub fn entry_points(&self) -> Result<EntryPoints> {
-        Ok(EntryPoints::new(&(self.site_packages()?)))
-    }
-
     fn pypackages(&self) -> PathBuf {
         self.root.join("__pypackages__")
+    }
+
+    pub fn presumed_env_root(&self) -> Result<PathBuf> {
+        self.interpreter.presumed_env_root(&self.pypackages())
+            .map_err(Error::from)
     }
 
     fn site_packages(&self) -> Result<PathBuf> {
@@ -97,6 +98,10 @@ impl Project {
                 self.root.to_owned(), self.interpreter.name().to_owned(),
             ))
         }
+    }
+
+    pub fn entry_points(&self) -> Result<EntryPoints> {
+        Ok(EntryPoints::new(&(self.site_packages()?)))
     }
 
     pub fn run<I, S>(&self, command: &str, args: I) -> Result<ExitStatus>
