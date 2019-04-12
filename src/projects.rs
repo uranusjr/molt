@@ -12,6 +12,7 @@ use crate::pythons::{self, Interpreter};
 
 #[derive(Debug)]
 pub enum Error {
+    CommandNotFoundError(String),
     EnvironmentNotFoundError(PathBuf, String),
     ProjectNotFoundError(PathBuf),
     PythonInterpreterError(pythons::Error),
@@ -21,6 +22,9 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Error::CommandNotFoundError(ref name) => {
+                write!(f, "command {:?} not found", name)
+            },
             Error::EnvironmentNotFoundError(ref root, ref name) => {
                 write!(f, "environment not found for {:?} in {:?}", name, root)
             },
@@ -118,6 +122,6 @@ impl Project {
                     .map_err(Error::from);
             }
         }
-        Command::new(command).args(args).status().map_err(Error::from)
+        Err(Error::CommandNotFoundError(command.to_owned()))
     }
 }
