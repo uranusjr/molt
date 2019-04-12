@@ -6,52 +6,62 @@ use crate::pythons::{self, Interpreter};
 
 fn app<'a, 'b>() -> App<'a, 'b> {
     app_from_crate!()
+    .setting(AppSettings::ArgRequiredElseHelp)
+    .setting(AppSettings::VersionlessSubcommands)
+    .arg(Arg::with_name("py")
+        .long("py")
+        .help("Python interpreter to use")
+        .required(true)
+        .takes_value(true)
+        .allow_hyphen_values(true)
+    )
+    .subcommand(SubCommand::with_name("show")
+        .about("Print project information")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .setting(AppSettings::VersionlessSubcommands)
-        .arg(Arg::with_name("py")
-            .long("py")
-            .help("Python interpreter to use")
+        .arg(Arg::with_name("env")
+            .long("env")
+            .help("Path to the environment")
+        )
+    )
+    .subcommand(SubCommand::with_name("init")
+        .about("Initialize an environment for project")
+        .arg(Arg::with_name("project")
+            .help("Path to project root directory")
             .required(true)
-            .takes_value(true)
-            .allow_hyphen_values(true)
         )
-        .subcommand(SubCommand::with_name("show")
-            .about("Print project information")
-            .setting(AppSettings::ArgRequiredElseHelp)
-            .arg(Arg::with_name("env")
-                .long("env")
-                .help("Path to the environment")
-            )
+    )
+    .subcommand(SubCommand::with_name("run")
+        .about("Run a command in the environment")
+        .setting(AppSettings::AllowLeadingHyphen)
+        .setting(AppSettings::DisableHelpFlags)
+        .arg(Arg::with_name("command")
+            .help("Command to run")
+            .required(true)
         )
-        .subcommand(SubCommand::with_name("init")
-            .about("Initialize an environment for project")
-            .arg(Arg::with_name("project")
-                .help("Path to project root directory")
-                .required(true)
-            )
+        .arg(Arg::with_name("args")
+            .help("Arguments to command")
+            .multiple(true)
         )
-        .subcommand(SubCommand::with_name("run")
-            .about("Run a command in the environment")
-            .setting(AppSettings::AllowLeadingHyphen)
-            .setting(AppSettings::DisableHelpFlags)
-            .arg(Arg::with_name("command")
-                .help("Command to run")
-                .required(true)
-            )
-            .arg(Arg::with_name("args")
-                .help("Arguments to command")
-                .multiple(true)
-            )
+    )
+    .subcommand(SubCommand::with_name("py")
+        .about("Run the Python interpreter in the environment")
+        .setting(AppSettings::AllowLeadingHyphen)
+        .setting(AppSettings::DisableHelpFlags)
+        .arg(Arg::with_name("args")
+            .help("Arguments to interpreter")
+            .multiple(true)
         )
-        .subcommand(SubCommand::with_name("py")
-            .about("Run the Python interpreter in the environment")
-            .setting(AppSettings::AllowLeadingHyphen)
-            .setting(AppSettings::DisableHelpFlags)
-            .arg(Arg::with_name("args")
-                .help("Arguments to interpreter")
-                .multiple(true)
-            )
+    )
+    .subcommand(SubCommand::with_name("pip-install")
+        .about("Secret subcommand to install things into the environment")
+        .setting(AppSettings::AllowLeadingHyphen)
+        .setting(AppSettings::DisableHelpFlags)
+        .setting(AppSettings::Hidden)
+        .arg(Arg::with_name("args")
+            .help("Arguments to pip install")
+            .multiple(true)
         )
+    )
 }
 
 pub enum Sub<'a> {
@@ -60,6 +70,7 @@ pub enum Sub<'a> {
     Run(RunOptions<'a>),
     Py(PyOptions<'a>),
     Show(ShowOptions<'a>),
+    PipInstall(PipInstallOptions<'a>),
 }
 
 pub struct Options<'a> {
@@ -88,6 +99,9 @@ impl<'a> Options<'a> {
             Some("run") => Sub::Run(RunOptions::new(&self.matches)),
             Some("py") => Sub::Py(PyOptions::new(&self.matches)),
             Some("show") => Sub::Show(ShowOptions::new(&self.matches)),
+            Some("pip-install") => {
+                Sub::PipInstall(PipInstallOptions::new(&self.matches))
+            },
             Some(n) => { panic!("unhandled subcommand {:?}", n); },
         }
     }
@@ -164,5 +178,19 @@ impl<'a> ShowOptions<'a> {
         } else {
             panic!("one of the options should present");
         }
+    }
+}
+
+pub struct PipInstallOptions<'a> {
+    matches: &'a ArgMatches<'a>,
+}
+
+impl<'a> PipInstallOptions<'a> {
+    fn new(parent: &'a ArgMatches) -> Self {
+        Self { matches: parent.subcommand_matches("pip-install").unwrap() }
+    }
+
+    pub fn args(&self) -> Vec<&str> {
+        self.matches.values_of("args").unwrap_or_default().collect()
     }
 }

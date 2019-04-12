@@ -78,5 +78,24 @@ fn main() {
             // TODO: What error should we use if the interpreter cannot start?
             std::process::exit(status.code().unwrap_or(-1));
         },
+        args::Sub::PipInstall(pip_install_opts) => {
+            let project = projects::Project::find_from_cwd(interpreter)
+                .expect("TODO: Fail gracefully when project is not found.");
+            let env = project.presumed_env_root().unwrap();
+            let prefix = dunce::simplified(&env).to_string_lossy();
+            let args =
+                vec![
+                    "-m", "pip", "install",
+                    "--prefix", &prefix,
+                    "--no-warn-script-location",
+                ]
+                .into_iter()
+                .chain(pip_install_opts.args())
+                .collect::<Vec<&str>>();
+            let status = project.py(args)
+                .expect("TODO: Fail gracefully when py fails.");
+            // TODO: What error should we use if the interpreter cannot start?
+            std::process::exit(status.code().unwrap_or(-1));
+        },
     }
 }
