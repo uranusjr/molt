@@ -64,7 +64,7 @@ Note that only commands installed via entry points work with `molt run`.
 
 ### `molt py`
 
-Access the base interpreter. For example, `molt --py=python3.6 py myscript.py`
+Access the base interpreter. For example, `molt python3.6 py myscript.py`
 would use interpreter `python3.6` to execute file `myscript.py`.
 
 
