@@ -4,8 +4,8 @@ Work in progress.
 
 ## Specify a Python
 
-All subcommands take a position argument *before* it to specify the Python to
-use. The Python command can be:
+All subcommands take a `--py` flag *before* it to specify the Python to use.
+The Python command can be:
 
 * Prefixed by a dash (e.g. `-3.6`). This is passed directly to the Python
   launcher (`py` command) if available.
@@ -16,13 +16,13 @@ Examples:
 
 ```bash
 # Runs "init" by invoking `py -2` as Python.
-molt -2 init
+molt --py -2 init
 
 # Runs "run" by invoking the specified executable.
-molt /usr/bin/python run
+molt --py /usr/bin/python run
 
 # Runs "init" by looking up `python3.6` in PATH.
-molt python3.6 init
+molt --py python3.6 init
 ```
 
 
@@ -64,7 +64,7 @@ Note that only commands installed via entry points work with `molt run`.
 
 ### `molt py`
 
-Access the base interpreter. For example, `molt python3.6 py myscript.py`
+Access the base interpreter. For example, `molt --py=python3.6 py myscript.py`
 would use interpreter `python3.6` to execute file `myscript.py`.
 
 
