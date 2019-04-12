@@ -42,6 +42,7 @@ def _populate(root):
 
 
 def _populate_pep425(root):
+    root.mkdir(parents=True, exist_ok=True)
     fn, _ = urllib.request.urlretrieve(
         "https://github.com/brettcannon/pep425/archive/master.zip",
     )
