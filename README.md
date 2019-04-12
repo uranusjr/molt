@@ -2,6 +2,7 @@
 
 Work in progress.
 
+
 ## Specify a Python
 
 All subcommands take a `--py` flag *before* it to specify the Python to use.
@@ -108,3 +109,17 @@ Poetry projects without converting wholesale.
 
 Locking into those files is not supported. You’ll need to use the respective
 tool to generate a new lock file.
+
+
+## Try it out
+
+Again, work in progress, so don’t judge (contributions are welcomed).
+
+Requires Cargo and a modern Python.
+
+```
+python assets/vendor.py
+cargo build --release
+```
+
+This gives you a binary in `target/release`. Copy it somewhere in your PATH.
