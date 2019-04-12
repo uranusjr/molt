@@ -75,7 +75,7 @@ impl Interpreter {
         let location = PathBuf::from(String::from_utf8(out.stdout).unwrap());
         Ok(Self {
             name: name.to_string(),
-            location: location,
+            location,
             comptagcache: None,
         })
     }

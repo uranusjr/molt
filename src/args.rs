@@ -62,7 +62,7 @@ impl<'a> Options<'a> {
 
     pub fn interpreter(&self) -> pythons::Result<Interpreter> {
         let py = self.matches.value_of("py").expect("required");
-        let (prog, args) = if py.starts_with("-") {
+        let (prog, args) = if py.starts_with('-') {
             ("py", vec![py])
         } else {
             (py, vec![])

@@ -16,7 +16,7 @@ impl EntryPoint {
         Some(Self {
             modu: m.trim().to_string(),
             func: f[1..].trim().to_string(),
-            gui: gui,
+            gui,
         })
     }
 

@@ -65,7 +65,7 @@ impl Project {
                 continue;
             }
             if p.join("__pypackages__").is_dir() {
-                return Ok(Self { root: p, interpreter: interpreter });
+                return Ok(Self { root: p, interpreter });
             }
             // TODO: Should we also look for other project markers like
             // pyproject.toml, Pipfile, etc.?

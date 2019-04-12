@@ -26,7 +26,7 @@ fn main() {
                 .join(interpreter.compatibility_tag()
                     .expect("TODO: Fail gracefully if Python call fails."));
             let prompt = init_opts.project_name()
-                .unwrap_or(String::from("venv"));
+                .unwrap_or_else(|| String::from("venv"));
             interpreter.create_venv(&envdir, &prompt)
                 .expect("Cannot create venv");
         },
