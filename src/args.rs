@@ -1,10 +1,13 @@
 use std::path::PathBuf;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use which::which;
 
 use crate::pythons::{self, Interpreter};
 
 fn app<'a, 'b>() -> App<'a, 'b> {
+    let py_available = which("py").is_ok();
+
     app_from_crate!()
     .setting(AppSettings::ArgRequiredElseHelp)
     .setting(AppSettings::VersionlessSubcommands)
@@ -13,7 +16,7 @@ fn app<'a, 'b>() -> App<'a, 'b> {
         .help("Python interpreter to use")
         .required(true)
         .takes_value(true)
-        .allow_hyphen_values(true)
+        .allow_hyphen_values(py_available)
     )
     .subcommand(SubCommand::with_name("show")
         .about("Print project information")
