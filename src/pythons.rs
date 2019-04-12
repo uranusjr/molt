@@ -5,6 +5,7 @@ use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use dunce;
 use tempdir::TempDir;
 use which;
 
@@ -85,7 +86,9 @@ impl Interpreter {
     }
 
     pub fn command(&self, pkgs: &Path) -> Result<Command> {
-        let pythonpath = pkgs.to_str().ok_or(Error::UnrepresentableError)?;
+        let pythonpath = dunce::simplified(pkgs)
+            .to_str()
+            .ok_or(Error::UnrepresentableError)?;
         let mut cmd = command(&self.location);
         cmd.env("PYTHONPATH", pythonpath);
         Ok(cmd)
