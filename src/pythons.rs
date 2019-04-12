@@ -15,7 +15,8 @@ use crate::vendors;
 pub enum Error {
     LookupError(which::Error),
     InvocationError(io::Error),
-    UnrepresentableError,
+    IncompatibleInterpreterError(String),
+    PathRepresentationError(PathBuf),
 }
 
 impl fmt::Display for Error {
@@ -23,8 +24,11 @@ impl fmt::Display for Error {
         match *self {
             Error::LookupError(ref e) => e.fmt(f),
             Error::InvocationError(ref e) => e.fmt(f),
-            Error::UnrepresentableError => {
-                write!(f, "Interpreter path not representable")
+            Error::IncompatibleInterpreterError(ref s) => {
+                write!(f, "interpreter {:?} has no compatibility tags", s)
+            },
+            Error::PathRepresentationError(ref p) => {
+                write!(f, "{:?} not representable", p)
             },
         }
     }
@@ -88,7 +92,7 @@ impl Interpreter {
     pub fn command(&self, pkgs: &Path) -> Result<Command> {
         let pythonpath = dunce::simplified(pkgs)
             .to_str()
-            .ok_or(Error::UnrepresentableError)?;
+            .ok_or(Error::PathRepresentationError(pkgs.to_owned()))?;
         let mut cmd = command(&self.location);
         cmd.env("PYTHONPATH", pythonpath);
         Ok(cmd)
@@ -115,7 +119,9 @@ impl Interpreter {
 
         let code = format!(
             "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",
-            env_dir.to_string_lossy().into_owned(),
+            dunce::simplified(env_dir)
+                .to_str()
+                .ok_or(Error::PathRepresentationError(env_dir.to_owned()))?,
             prompt,
         );
 
@@ -147,7 +153,7 @@ impl Interpreter {
 
         let val = String::from_utf8(out.stdout).unwrap();
         if val.is_empty() {
-            Err(Error::UnrepresentableError)
+            Err(Error::IncompatibleInterpreterError(self.name.to_owned()))
         } else {
             Ok(val)
         }
