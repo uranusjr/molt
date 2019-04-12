@@ -1,2 +1,2 @@
-virtenv==0.2.5
+virtenv==0.2.6
 virtualenv==16.4.3
