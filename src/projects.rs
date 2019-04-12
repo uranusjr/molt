@@ -80,6 +80,10 @@ impl Project {
         Self::find(&current_dir()?, interpreter)
     }
 
+    pub fn entry_points(&self) -> Result<EntryPoints> {
+        Ok(EntryPoints::new(&(self.site_packages()?)))
+    }
+
     fn pypackages(&self) -> PathBuf {
         self.root.join("__pypackages__")
     }

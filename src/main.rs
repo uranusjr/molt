@@ -1,4 +1,5 @@
 #[macro_use] extern crate clap;
+#[macro_use] extern crate prettytable;
 #[macro_use] extern crate rust_embed;
 
 extern crate ini;
@@ -12,15 +13,15 @@ mod projects;
 mod pythons;
 mod vendors;
 
-use args::Sub;
+use prettytable::format::consts::*;
 
 fn main() {
     let opts = args::Options::new();
     let interpreter = opts.interpreter().expect("interpreter unavailable");
 
     match opts.sub_options() {
-        Sub::None => {},
-        Sub::Init(init_opts) => {
+        args::Sub::None => {},
+        args::Sub::Init(init_opts) => {
             let envdir = init_opts.project_root()
                 .join("__pypackages__")
                 .join(interpreter.compatibility_tag()
@@ -30,21 +31,36 @@ fn main() {
             interpreter.create_venv(&envdir, &prompt)
                 .expect("Cannot create venv");
         },
-        Sub::Run(run_opts) => {
+        args::Sub::Run(run_opts) => {
             let project = projects::Project::find_from_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
-            let status = project.run(run_opts.command(), run_opts.args())
-                .expect("TODO: Fail gracefully when run fails.");
-
-            // TODO: What error should we use if the command fails to execute?
-            std::process::exit(status.code().unwrap_or(-1));
+            let command = run_opts.command();
+            if command == "--list" {
+                // HACK: Handle "run --list".
+                let mut eps: Vec<Vec<String>> = project.entry_points().unwrap()
+                    .map(|(n, e)| {
+                        let call = format!("{}:{}", e.module(), e.function());
+                        vec![n, call]
+                    })
+                    .collect();
+                eps.sort_unstable();
+                let mut table = prettytable::Table::from(eps);
+                table.set_titles(row!["Entry point", "Call target"]);
+                table.set_format(*FORMAT_NO_BORDER_LINE_SEPARATOR);
+                table.printstd();
+                std::process::exit(0);
+            } else {
+                let status = project.run(command, run_opts.args())
+                    .expect("TODO: Fail gracefully when run fails.");
+                // TODO: What error should we use if the command cannot run?
+                std::process::exit(status.code().unwrap_or(-1));
+            }
         },
-        Sub::Py(py_opts) => {
+        args::Sub::Py(py_opts) => {
             let project = projects::Project::find_from_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             let status = project.py(py_opts.args())
                 .expect("TODO: Fail gracefully when py fails.");
-
             // TODO: What error should we use if the interpreter cannot start?
             std::process::exit(status.code().unwrap_or(-1));
         },
