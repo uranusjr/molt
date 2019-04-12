@@ -50,6 +50,9 @@ fn read_entry_points(distro: &Path) -> Option<HashMap<String, EntryPoint>> {
             _ => { continue; },
         };
         for (key, value) in properties.iter() {
+            // TODO: We need to blacklist versioned pip and easy_install entry
+            // points because they have fake entries. (!)
+            // github.com/pypa/pip/blob/54b6a91/src/pip/_internal/wheel.py#L507
             let entry_point = match EntryPoint::parse(value, gui) {
                 Some(v) => v,
                 None => { continue; },

@@ -39,5 +39,14 @@ fn main() {
             // TODO: What error should we use if the command fails to execute?
             std::process::exit(status.code().unwrap_or(-1));
         },
+        Sub::Py(py_opts) => {
+            let project = projects::Project::find_from_cwd(interpreter)
+                .expect("TODO: Fail gracefully when project is not found.");
+            let status = project.py(py_opts.args())
+                .expect("TODO: Fail gracefully when py fails.");
+
+            // TODO: What error should we use if the interpreter cannot start?
+            std::process::exit(status.code().unwrap_or(-1));
+        },
     }
 }

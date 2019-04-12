@@ -7,6 +7,7 @@ use crate::pythons::{self, Interpreter};
 fn app<'a, 'b>() -> App<'a, 'b> {
     app_from_crate!()
         .setting(AppSettings::ArgRequiredElseHelp)
+        .setting(AppSettings::VersionlessSubcommands)
         .arg(Arg::with_name("py")
             .long("py")
             .help("Python interpreter to use")
@@ -30,6 +31,15 @@ fn app<'a, 'b>() -> App<'a, 'b> {
             .arg(Arg::with_name("args")
                 .help("Arguments to command")
                 .multiple(true)
+                .allow_hyphen_values(true)  // Doesn't work (clap-rs/clap#1437)
+            )
+        )
+        .subcommand(SubCommand::with_name("py")
+            .about("Run the Python interpreter in the environment")
+            .arg(Arg::with_name("args")
+                .help("Arguments to interpreter")
+                .multiple(true)
+                .allow_hyphen_values(true)  // Doesn't work (clap-rs/clap#1437)
             )
         )
 }
@@ -37,7 +47,8 @@ fn app<'a, 'b>() -> App<'a, 'b> {
 pub enum Sub<'a> {
     None,
     Init(InitOptions<'a>),
-    Run(RunOptions<'a>)
+    Run(RunOptions<'a>),
+    Py(PyOptions<'a>),
 }
 
 pub struct Options<'a> {
@@ -63,6 +74,7 @@ impl<'a> Options<'a> {
         match self.matches.subcommand_name() {
             Some("init") => Sub::Init(InitOptions::new(&self.matches)),
             Some("run") => Sub::Run(RunOptions::new(&self.matches)),
+            Some("py") => Sub::Py(PyOptions::new(&self.matches)),
             _ => Sub::None,
         }
     }
@@ -99,6 +111,20 @@ impl<'a> RunOptions<'a> {
 
     pub fn command(&self) -> &str {
         self.matches.value_of("command").expect("required")
+    }
+
+    pub fn args(&self) -> Vec<&str> {
+        self.matches.values_of("args").unwrap_or_default().collect()
+    }
+}
+
+pub struct PyOptions<'a> {
+    matches: &'a ArgMatches<'a>,
+}
+
+impl<'a> PyOptions<'a> {
+    fn new(parent: &'a ArgMatches) -> Self {
+        Self { matches: parent.subcommand_matches("py").unwrap() }
     }
 
     pub fn args(&self) -> Vec<&str> {

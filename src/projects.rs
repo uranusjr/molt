@@ -3,7 +3,7 @@ use std::ffi::OsStr;
 use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::ExitStatus;
 
 use unindent::unindent;
 
@@ -123,5 +123,14 @@ impl Project {
             }
         }
         Err(Error::CommandNotFoundError(command.to_owned()))
+    }
+
+    pub fn py<I, S>(&self, args: I) -> Result<ExitStatus>
+        where I: IntoIterator<Item=S>, S: AsRef<OsStr>
+    {
+        self.interpreter.command(&self.site_packages()?)?
+            .args(args)
+            .status()
+            .map_err(Error::from)
     }
 }

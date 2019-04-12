@@ -84,6 +84,13 @@ impl Interpreter {
         &self.name
     }
 
+    pub fn command(&self, pkgs: &Path) -> Result<Command> {
+        let pythonpath = pkgs.to_str().ok_or(Error::UnrepresentableError)?;
+        let mut cmd = command(&self.location);
+        cmd.env("PYTHONPATH", pythonpath);
+        Ok(cmd)
+    }
+
     pub fn interpret<I, S>(
         &self,
         code: &str,
@@ -92,9 +99,7 @@ impl Interpreter {
     ) -> Result<Command>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        let pythonpath = pkgs.to_str().ok_or(Error::UnrepresentableError)?;
-        let mut cmd = command(&self.location);
-        cmd.env( "PYTHONPATH", pythonpath);
+        let mut cmd = self.command(pkgs)?;
         cmd.arg("-c");
         cmd.arg(&code);
         cmd.args(args);
