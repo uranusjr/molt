@@ -90,9 +90,9 @@ impl Interpreter {
     }
 
     pub fn command(&self, pkgs: &Path) -> Result<Command> {
-        let pythonpath = dunce::simplified(pkgs)
-            .to_str()
-            .ok_or(Error::PathRepresentationError(pkgs.to_owned()))?;
+        let pythonpath = dunce::simplified(pkgs).to_str().ok_or_else(|| {
+            Error::PathRepresentationError(pkgs.to_owned())
+        })?;
         let mut cmd = command(&self.location);
         cmd.env("PYTHONPATH", pythonpath);
         Ok(cmd)
@@ -119,9 +119,9 @@ impl Interpreter {
 
         let code = format!(
             "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",
-            dunce::simplified(env_dir)
-                .to_str()
-                .ok_or(Error::PathRepresentationError(env_dir.to_owned()))?,
+            dunce::simplified(env_dir).to_str().ok_or_else(|| {
+                Error::PathRepresentationError(env_dir.to_owned())
+            })?,
             prompt,
         );
 
