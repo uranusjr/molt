@@ -1,0 +1,66 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+
+    "type": "object",
+    "properties": {
+        "dependencies": {
+            "type": "object",
+            "patternProperties": {
+                "^(?P<dependencyKey>.*)$": {
+                    "type": "object",
+                    "properties": {
+                        "python": {
+                            "name": {"type": "string"},
+                            "version": {"type": "string"},
+                            "sources": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            }
+                        },
+                        "dependencies": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "patternProperties": {
+                                    "^(?P<dependencyKey>.+)": {
+                                        "oneOf": [
+                                            {"type": "null"},
+                                            {
+                                                "type": "array",
+                                                "items": {"type": "string"}
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "hashes": {
+            "type": "object",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^(?P<hashName>[a-z0-9]+):(?P<hashValue>.+)$"
+                }
+            }
+        },
+        "sources": {
+            "type": "object",
+            "patternProperties": {
+                "^(?P<repositoryName>.*)$": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "ignore_ssl": {"type": "boolean"}
+                    },
+                    "required": ["url"]
+                }
+            }
+        }
+    },
+    "patternProperties": {"^_(?P<tool>.+)$": {}}
+}
