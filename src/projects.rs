@@ -110,6 +110,7 @@ impl Project {
         let p = self.site_packages()?;
         for (name, entry) in EntryPoints::new(&p) {
             if name == command {
+                let function = entry.function();
                 let code = unindent(&format!(
                     "
                     import sys
@@ -119,9 +120,9 @@ impl Project {
                         sys.exit({}())
                     ",
                     entry.module(),
-                    entry.function(),
+                    function.split('.').next().unwrap_or(function),
                     name,
-                    entry.function(),
+                    function,
                 ));
 
                 // TODO: On Windows we should honor the entry.gui flag. Maybe
