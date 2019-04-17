@@ -82,17 +82,19 @@ fn main() {
             let project = projects::Project::find_from_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             let env = project.presumed_env_root().unwrap();
-            let prefix = dunce::simplified(&env).to_string_lossy();
             let args =
                 vec![
                     "-m", "pip", "install",
-                    "--prefix", &prefix,
+                    "--prefix", dunce::simplified(&env).to_str().unwrap(),
                     "--no-warn-script-location",
                 ]
                 .into_iter()
                 .chain(pip_install_opts.args())
                 .collect::<Vec<&str>>();
-            let status = project.py(args)
+            let cmd = project.base_interpreter().location().to_str().unwrap();
+            let status = std::process::Command::new(cmd)
+                .args(args)
+                .status()
                 .expect("TODO: Fail gracefully when py fails.");
             // TODO: What error should we use if the interpreter cannot start?
             std::process::exit(status.code().unwrap_or(-1));

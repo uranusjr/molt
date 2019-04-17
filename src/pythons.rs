@@ -81,6 +81,10 @@ impl Interpreter {
         &self.name
     }
 
+    pub fn location(&self) -> &Path {
+        &self.location
+    }
+
     pub fn command(
         &self,
         io_encoding: Option<&str>,
@@ -118,7 +122,9 @@ impl Interpreter {
         vendors::VirtEnv::populate_to(tmp_dir.path())?;
 
         let code = format!(
-            "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",
+            "import virtenv; virtenv.create(\
+             python=None, env_dir={:?}, prompt={:?},\
+             system=False, bare=False)",
             simplified(env_dir).to_str().ok_or_else(|| {
                 Error::PathRepresentationError(env_dir.to_owned())
             })?,

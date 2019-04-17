@@ -2,7 +2,6 @@ use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::io;
-use std::iter::once;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
@@ -11,12 +10,6 @@ use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
 use crate::pythons::{self, Interpreter};
-
-#[cfg(target_os = "windows")]
-static BINDIR_NAME: &str = "Scripts";
-
-#[cfg(not(target_os = "windows"))]
-static BINDIR_NAME: &str = "bin";
 
 #[derive(Debug)]
 pub enum Error {
@@ -96,6 +89,10 @@ impl Project {
         Self::find(&env::current_dir()?, interpreter)
     }
 
+    pub fn base_interpreter(&self) -> &Interpreter {
+        &self.interpreter
+    }
+
     fn pypackages(&self) -> PathBuf {
         self.root.join("__pypackages__")
     }
@@ -116,7 +113,11 @@ impl Project {
         }
     }
 
+    #[allow(dead_code)]
     fn bindir(&self) -> Result<PathBuf> {
+        #[cfg(target_os = "windows")] static BINDIR_NAME: &str = "Scripts";
+        #[cfg(not(target_os = "windows"))] static BINDIR_NAME: &str = "bin";
+
         let p = self.interpreter.presumed_env_root(&self.pypackages())?
             .join(BINDIR_NAME);
         if p.is_dir() {
