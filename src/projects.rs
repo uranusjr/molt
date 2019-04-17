@@ -134,11 +134,20 @@ impl Project {
 
     fn run_interpreter(&self) -> Result<Command> {
         let mut cmd = self.interpreter.command(None, &self.site_packages()?)?;
-        cmd.env("PATH", {
-            let p = env::var_os("PATH").unwrap_or_default();
-            let chained = once(self.bindir()?).chain(env::split_paths(&p));
-            env::join_paths(chained)?
-        });
+
+        // TODO: Is this a good idea? I don't think so since the executables
+        // in the environment aren't really meant to be used. They might not
+        // even be compatible if they are created on another machine (with the
+        // same architecture).
+        // cmd.env("PATH", {
+        //     let p = env::var("PATH").unwrap_or_default();
+        //     let chained = iter::once(simplified(&self.bindir()?).to_owned())
+        //         .chain(env::split_paths(&p));
+        //     env::join_paths(chained)?
+        // });
+
+        // I *think* this is OK? Some tools sniff it, so it might be better to
+        // say we are (an equivalent of) a virtual environment.
         cmd.env("VIRTUAL_ENV", simplified(&self.presumed_env_root()?));
 
         // HACK: pip sniffs sys.real_prefix and sys.base_prefix to detect
