@@ -49,13 +49,6 @@ impl From<which::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-fn command(program: &Path) -> Command {
-    let mut cmd = Command::new(program);
-    cmd.env("PYTHONIOENCODING", "utf-8");
-    cmd
-}
-
-
 #[allow(dead_code)]
 pub struct Interpreter {
     name: String,
@@ -68,7 +61,8 @@ impl Interpreter {
     pub fn discover<I, S>(name: &str, program: S, args: I) -> Result<Self>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        let out = command(&which::which(program)?)
+        let out = Command::new(&which::which(program)?)
+            .env("PYTHONIOENCODING", "utf-8")
             .args(args)
             .args(&[
                 "-c",
@@ -89,24 +83,32 @@ impl Interpreter {
         &self.name
     }
 
-    pub fn command(&self, pkgs: &Path) -> Result<Command> {
+    pub fn command(
+        &self,
+        io_encoding: Option<&str>,
+        pkgs: &Path,
+    ) -> Result<Command> {
         let pythonpath = dunce::simplified(pkgs).to_str().ok_or_else(|| {
             Error::PathRepresentationError(pkgs.to_owned())
         })?;
-        let mut cmd = command(&self.location);
+        let mut cmd = Command::new(&self.location);
+        if let Some(encoding) = io_encoding {
+            cmd.env("PYTHONIOENCODING", encoding);
+        }
         cmd.env("PYTHONPATH", pythonpath);
         Ok(cmd)
     }
 
     fn interpret<I, S>(
         &self,
+        encoding: Option<&str>,
         code: &str,
         pkgs: &Path,
         args: I,
     ) -> Result<Command>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        let mut cmd = self.command(pkgs)?;
+        let mut cmd = self.command(encoding, pkgs)?;
         cmd.arg("-c");
         cmd.arg(&code);
         cmd.args(args);
@@ -127,6 +129,7 @@ impl Interpreter {
 
         // TODO: Show message based on status code.
         let _status = self.interpret(
+            None,
             &code,
             tmp_dir.path(),
             empty::<&str>(),
@@ -143,6 +146,7 @@ impl Interpreter {
         vendors::Pep425::populate_to(tmp_dir.path())?;
 
         let out = self.interpret(
+            Some("utf-8"),
             "from __future__ import print_function; \
              import pep425; print(next(pep425.sys_tags()), end='')",
             tmp_dir.path(),
@@ -170,11 +174,11 @@ impl Interpreter {
         let env_dir = self.presumed_env_root(pypackages)?;
 
         if cfg!(windows) {
-            let p = env_dir.join("Lib").join("site-packages");
-            return Ok(p.to_path_buf());
+            return Ok(env_dir.join("Lib").join("site-packages"));
         }
 
-        let out = command(&self.location)
+        let out = Command::new(&self.location)
+            .env("PYTHONIOENCODING", "utf-8")
             .arg("-c")
             .arg("from __future__ import print_function; \
                   import sys; \

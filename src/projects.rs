@@ -132,7 +132,7 @@ impl Project {
     }
 
     fn run_interpreter(&self) -> Result<Command> {
-        let mut cmd = self.interpreter.command(&self.site_packages()?)?;
+        let mut cmd = self.interpreter.command(None, &self.site_packages()?)?;
         cmd.env("PATH", {
             let p = env::var("PATH").unwrap_or_default();
             let chained = iter::once(self.bindir()?)
