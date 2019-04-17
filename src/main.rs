@@ -25,7 +25,7 @@ fn main() {
     match opts.sub_options() {
         args::Sub::None => {},
         args::Sub::Show(show_opts) => {
-            let project = projects::Project::find_from_cwd(interpreter)
+            let project = projects::Project::find_in_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             match show_opts.what() {
                 args::ShowWhat::Env => {
@@ -46,7 +46,7 @@ fn main() {
                 .expect("Cannot create venv");
         },
         args::Sub::Run(run_opts) => {
-            let project = projects::Project::find_from_cwd(interpreter)
+            let project = projects::Project::find_in_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             let command = run_opts.command();
             if command == "--list" {
@@ -71,7 +71,7 @@ fn main() {
             }
         },
         args::Sub::Py(py_opts) => {
-            let project = projects::Project::find_from_cwd(interpreter)
+            let project = projects::Project::find_in_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             let status = project.py(py_opts.args())
                 .expect("TODO: Fail gracefully when py fails.");
@@ -79,7 +79,7 @@ fn main() {
             std::process::exit(status.code().unwrap_or(-1));
         },
         args::Sub::PipInstall(pip_install_opts) => {
-            let project = projects::Project::find_from_cwd(interpreter)
+            let project = projects::Project::find_in_cwd(interpreter)
                 .expect("TODO: Fail gracefully when project is not found.");
             let env = project.presumed_env_root().unwrap();
             let args =

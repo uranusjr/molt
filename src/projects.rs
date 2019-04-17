@@ -85,7 +85,7 @@ impl Project {
         Err(Error::ProjectNotFoundError(directory.to_path_buf()))
     }
 
-    pub fn find_from_cwd(interpreter: Interpreter) -> Result<Self> {
+    pub fn find_in_cwd(interpreter: Interpreter) -> Result<Self> {
         Self::find(&env::current_dir()?, interpreter)
     }
 
