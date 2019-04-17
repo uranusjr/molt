@@ -6,6 +6,7 @@ use std::iter;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
+use dunce::simplified;
 use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
@@ -139,7 +140,7 @@ impl Project {
                 .chain(env::split_paths(&p));
             env::join_paths(chained)?
         });
-        cmd.env("VIRTUAL_ENV", self.presumed_env_root()?);
+        cmd.env("VIRTUAL_ENV", simplified(&self.presumed_env_root()?));
         Ok(cmd)
     }
 

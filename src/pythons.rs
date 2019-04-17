@@ -5,7 +5,7 @@ use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use dunce;
+use dunce::simplified;
 use tempdir::TempDir;
 use which;
 
@@ -61,14 +61,13 @@ impl Interpreter {
     pub fn discover<I, S>(name: &str, program: S, args: I) -> Result<Self>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
+        let code = "from __future__ import print_function; \
+                    import sys; print(sys.executable, end='')";
         let out = Command::new(&which::which(program)?)
             .env("PYTHONIOENCODING", "utf-8")
             .args(args)
-            .args(&[
-                "-c",
-                "from __future__ import print_function; \
-                 import sys; print(sys.executable, end='')",
-            ])
+            .arg("-c")
+            .arg(code)
             .output()?;
 
         let location = PathBuf::from(String::from_utf8(out.stdout).unwrap());
@@ -88,7 +87,7 @@ impl Interpreter {
         io_encoding: Option<&str>,
         pkgs: &Path,
     ) -> Result<Command> {
-        let pythonpath = dunce::simplified(pkgs).to_str().ok_or_else(|| {
+        let pythonpath = simplified(pkgs).to_str().ok_or_else(|| {
             Error::PathRepresentationError(pkgs.to_owned())
         })?;
         let mut cmd = Command::new(&self.location);
@@ -121,7 +120,7 @@ impl Interpreter {
 
         let code = format!(
             "import virtenv; virtenv.create(None, {:?}, False, prompt={:?})",
-            dunce::simplified(env_dir).to_str().ok_or_else(|| {
+            simplified(env_dir).to_str().ok_or_else(|| {
                 Error::PathRepresentationError(env_dir.to_owned())
             })?,
             prompt,
