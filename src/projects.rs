@@ -146,8 +146,7 @@ impl Project {
     pub fn run<I, S>(&self, command: &str, args: I) -> Result<ExitStatus>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        let p = self.site_packages()?;
-        for (name, entry) in EntryPoints::new(&p) {
+        for (name, entry) in EntryPoints::new(&self.site_packages()?) {
             if name == command {
                 let function = entry.function();
                 let code = unindent(&format!(
