@@ -6,12 +6,15 @@
 extern crate dunce;
 extern crate ini;
 extern crate regex;
+extern crate serde;
+extern crate serde_json;
 extern crate tempdir;
 extern crate unindent;
 extern crate which;
 
 mod commands;
 mod entrypoints;
+mod locks;
 mod projects;
 mod pythons;
 mod vendors;

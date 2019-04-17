@@ -194,14 +194,3 @@ impl Interpreter {
         Ok(env_dir.join("lib").join(&name).join("site-packages"))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_interpreter_discover() {
-        let result = Interpreter::discover("python", &"python", &[]);
-        assert!(result.is_ok());
-    }
-}
