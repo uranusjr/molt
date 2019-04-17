@@ -98,7 +98,7 @@ impl Interpreter {
         Ok(cmd)
     }
 
-    pub fn interpret<I, S>(
+    fn interpret<I, S>(
         &self,
         code: &str,
         pkgs: &Path,

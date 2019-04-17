@@ -1,19 +1,27 @@
-use std::env::current_dir;
+use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::io;
+use std::iter;
 use std::path::{Path, PathBuf};
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
 
 use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
 use crate::pythons::{self, Interpreter};
 
+#[cfg(target_os = "windows")]
+static BINDIR_NAME: &str = "Scripts";
+
+#[cfg(not(target_os = "windows"))]
+static BINDIR_NAME: &str = "bin";
+
 #[derive(Debug)]
 pub enum Error {
     CommandNotFoundError(String),
     EnvironmentNotFoundError(PathBuf, String),
+    EnvironmentSetupError(env::JoinPathsError),
     ProjectNotFoundError(PathBuf),
     PythonInterpreterError(pythons::Error),
     SystemEnvironmentError(io::Error),
@@ -28,12 +36,19 @@ impl fmt::Display for Error {
             Error::EnvironmentNotFoundError(ref root, ref name) => {
                 write!(f, "environment not found for {:?} in {:?}", name, root)
             },
+            Error::EnvironmentSetupError(ref e) => e.fmt(f),
             Error::ProjectNotFoundError(ref p) => {
                 write!(f, "project not found in {:?}", p)
             },
             Error::PythonInterpreterError(ref e) => e.fmt(f),
             Error::SystemEnvironmentError(ref e) => e.fmt(f),
         }
+    }
+}
+
+impl From<env::JoinPathsError> for Error {
+    fn from(e: env::JoinPathsError) -> Error {
+        Error::EnvironmentSetupError(e)
     }
 }
 
@@ -77,7 +92,7 @@ impl Project {
     }
 
     pub fn find_from_cwd(interpreter: Interpreter) -> Result<Self> {
-        Self::find(&current_dir()?, interpreter)
+        Self::find(&env::current_dir()?, interpreter)
     }
 
     fn pypackages(&self) -> PathBuf {
@@ -100,8 +115,32 @@ impl Project {
         }
     }
 
+    fn bindir(&self) -> Result<PathBuf> {
+        let p = self.interpreter.presumed_env_root(&self.pypackages())?
+            .join(BINDIR_NAME);
+        if p.is_dir() {
+            Ok(p)
+        } else {
+            Err(Error::EnvironmentNotFoundError(
+                self.root.to_owned(), self.interpreter.name().to_owned(),
+            ))
+        }
+    }
+
     pub fn entry_points(&self) -> Result<EntryPoints> {
         Ok(EntryPoints::new(&(self.site_packages()?)))
+    }
+
+    fn run_interpreter(&self) -> Result<Command> {
+        let mut cmd = self.interpreter.command(&self.site_packages()?)?;
+        cmd.env("PATH", {
+            let p = env::var("PATH").unwrap_or_default();
+            let chained = iter::once(self.bindir()?)
+                .chain(env::split_paths(&p));
+            env::join_paths(chained)?
+        });
+        cmd.env("VIRTUAL_ENV", self.presumed_env_root()?);
+        Ok(cmd)
     }
 
     pub fn run<I, S>(&self, command: &str, args: I) -> Result<ExitStatus>
@@ -127,7 +166,10 @@ impl Project {
 
                 // TODO: On Windows we should honor the entry.gui flag. Maybe
                 // we should find pythonw.exe during interpreter discovery?
-                return self.interpreter.interpret(&code, &p, args)?
+                return self.run_interpreter()?
+                    .arg("-c")
+                    .arg(&code)
+                    .args(args)
                     .status()
                     .map_err(Error::from);
             }
@@ -138,9 +180,6 @@ impl Project {
     pub fn py<I, S>(&self, args: I) -> Result<ExitStatus>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        self.interpreter.command(&self.site_packages()?)?
-            .args(args)
-            .status()
-            .map_err(Error::from)
+        self.run_interpreter()?.args(args).status().map_err(Error::from)
     }
 }
