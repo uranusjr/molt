@@ -74,10 +74,25 @@ Each dependency entry may contain one or both of the following keys:
 PyPI. This may be extended in the future to include other package sources like
 Conda.)
 
-
 #### `hashes`
 
-TODO
+This section holds a mapping of hashes for each dependency entry. If provided,
+each key should point to a key in `dependencies`; the value should be an array
+of hashes, used to verify that the artifact fetched on install time matches
+one of those expected at resolve time.
+
+Each hash entry should be a string of the following form:
+
+    <hashname>:<hashvalue>
+
+where `<hashname>` and `<hashvalue>` follow the definition in [PEP 503]:
+`<hashname>` is the lowercase name of the hash function (such as
+`sha256`), and `<hashvalue>` is the hex encoded digest.
+
+[PEP 503]: https://www.python.org/dev/peps/pep-0503/
+
+If a dependency’s key is missing from the hashes mapping, any artifact
+downloaded to satify it is assumed to be valid.
 
 ### Discussions
 
@@ -118,6 +133,13 @@ pushed to installation time. While it would be more work to reconstruct the
 graph, it is usually what tools want to do anyway (to order the packages for
 installation).
 
+#### Out-of-line hash definition
+
+Unlike Pipfile.lock the hashes are defined in their own mapping, instead of
+embedded inside `dependencies`. This decision is made to improve readability
+since both the list of hashes and hashes themselves are not usually
+consumable for humans, and tend to be quite long, making the dependency list
+difficult to read on smaller screens.
 
 ## How Molt specifies Python packages
 
@@ -212,3 +234,4 @@ This would
   on `molt install dev`.
 
 and so on.
+

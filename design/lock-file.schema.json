@@ -44,7 +44,7 @@
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "pattern": "^(?P<hashName>[a-z0-9]+):(?P<hashValue>.+)$"
+                    "pattern": "^(?P<hashName>[a-z0-9_]+):(?P<hashValue>.+)$"
                 }
             }
         },
