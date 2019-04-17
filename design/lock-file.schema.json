@@ -55,7 +55,7 @@
                     "type": "object",
                     "properties": {
                         "url": {"type": "string"},
-                        "ignore_ssl": {"type": "boolean"}
+                        "no_verify_ssl": {"type": "boolean"}
                     },
                     "required": ["url"]
                 }
