@@ -134,7 +134,7 @@ impl Project {
     fn run_interpreter(&self) -> Result<Command> {
         let mut cmd = self.interpreter.command(None, &self.site_packages()?)?;
         cmd.env("PATH", {
-            let p = env::var("PATH").unwrap_or_default();
+            let p = env::var_os("PATH").unwrap_or_default();
             let chained = iter::once(self.bindir()?)
                 .chain(env::split_paths(&p));
             env::join_paths(chained)?
