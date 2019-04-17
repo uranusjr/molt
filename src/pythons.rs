@@ -49,7 +49,6 @@ impl From<which::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-#[allow(dead_code)]
 pub struct Interpreter {
     name: String,
     location: PathBuf,
