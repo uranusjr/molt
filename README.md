@@ -81,17 +81,14 @@ index. Useful if you want to add a pinned package to the manifest, but don’t
 immediately know what version to use.
 
 
-## Menifest
+## Manifest
 
 TODO.
 
 
 ## Lock file
 
-TODO. This would be a more inclusive proposal based on discussions on
-[Structured, exchangable lock file format].
-
-[Structured, exchangable lock file format]: https://discuss.python.org/t/structured-exchangeable-lock-file-format-requirements-txt-2-0/876
+See <design/lock-file.md>.
 
 
 ## Interoperability
