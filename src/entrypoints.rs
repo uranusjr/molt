@@ -88,7 +88,7 @@ fn read_all_entry_points(dir: &Path) -> Option<HashMap<String, EntryPoint>> {
     Some(entry_points)
 }
 
-// TODO: Implement this as a lazy interator instead.
+// TODO: Implement this as a lazy iterator instead.
 pub struct EntryPoints {
     iterator: hash_map::IntoIter<String, EntryPoint>,
 }
