@@ -1,14 +1,18 @@
-import pathlib
+import glob
+import os
 import shutil
 import subprocess
 import sys
-import urllib.request
+try:
+    import urllib.request as urllib_request
+except ImportError:
+    import urllib as urllib_request
 import zipfile
 
 
 def _remove(p):
-    if p.is_dir():
-        shutil.rmtree(str(p))
+    if os.path.isdir(p):
+        shutil.rmtree(p)
     else:
         p.unlink()
 
@@ -23,14 +27,14 @@ BLACKLIST_PATTERNS = [
 
 
 def _populate(root):
-    requirements_txt = root.joinpath("requirements.txt")
-    if not requirements_txt.is_file():
+    requirements_txt = os.path.join(root, "requirements.txt")
+    if not os.path.isfile(requirements_txt):
         return
     subprocess.check_call([
         sys.executable, "-m", "pip", "install",
         "--disable-pip-version-check",
-        "--target", str(root),
-        "--requirement", str(requirements_txt),
+        "--target", root,
+        "--requirement", requirements_txt,
         "--no-color",
         "--no-compile",
         "--no-deps",
@@ -38,27 +42,30 @@ def _populate(root):
         "--upgrade",
     ])
     for entry in BLACKLIST_PATTERNS:
-        for path in root.glob(entry):
+        for path in glob.glob(os.path.join(root, entry)):
             _remove(path)
 
 
 def _populate_pep425(root):
-    root.mkdir(parents=True, exist_ok=True)
-    fn, _ = urllib.request.urlretrieve(
+    if not os.path.exists(root):
+        os.makedirs(root)
+    fn, _ = urllib_request.urlretrieve(
         "https://github.com/brettcannon/pep425/archive/master.zip",
     )
     with zipfile.ZipFile(fn) as zf:
         data = zf.read("pep425-master/pep425.py")
-        root.joinpath("pep425.py").write_bytes(data)
-    pathlib.Path(fn).unlink()
+        with open(os.path.join(root, "pep425.py"), "wb") as f:
+            f.write(data)
+    os.unlink(fn)
 
 
 def main():
-    assets_root = pathlib.Path(__file__).parent
-    for p in assets_root.iterdir():
-        if p.is_dir():
+    assets_root = os.path.dirname(__file__)
+    for child_name in os.listdir(assets_root):
+        p = os.path.join(assets_root, child_name)
+        if os.path.isdir(p):
             _populate(p)
-    _populate_pep425(assets_root.joinpath("pep425"))
+    _populate_pep425(os.path.join(assets_root, "pep425"))
 
 
 if __name__ == '__main__':

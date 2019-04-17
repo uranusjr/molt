@@ -2,7 +2,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::io;
-use std::iter;
+use std::iter::once;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
@@ -136,11 +136,16 @@ impl Project {
         let mut cmd = self.interpreter.command(None, &self.site_packages()?)?;
         cmd.env("PATH", {
             let p = env::var_os("PATH").unwrap_or_default();
-            let chained = iter::once(self.bindir()?)
-                .chain(env::split_paths(&p));
+            let chained = once(self.bindir()?).chain(env::split_paths(&p));
             env::join_paths(chained)?
         });
         cmd.env("VIRTUAL_ENV", simplified(&self.presumed_env_root()?));
+
+        // HACK: pip sniffs sys.real_prefix and sys.base_prefix to detect
+        // whether it's in a virtual environment, and barks if the user sets
+        // this to true. I can't find another realiable way around it.
+        cmd.env("PIP_REQUIRE_VIRTUALENV", "false");
+
         Ok(cmd)
     }
 
