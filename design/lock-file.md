@@ -46,16 +46,26 @@ top-level field named `_molt`.
 
 #### `sources`
 
-TODO
+This section holds a mapping of sources used to find packages. Only the
+“Simple” repository API defined in [PEP 503] is supported at the current
+time. (This may change in the future to include other formats, e.g. Conda
+channels.)
+
+[PEP 503]: https://www.python.org/dev/peps/pep-0503/
+
+Each source entry should contain a key, URL, that points to the API’s root URL,
+e.g. `https://pypi.org/simple` for PyPI. If the optional key `no_verify_ssl`
+is specified as false, SSL errors are ignored when accessing the API (the same
+as supplying `--trusted-host` to pip).
 
 #### `dependencies`
 
-This section describes a direction graph that represents the dependency tree.
+This section describes a directed graph that represents the dependency tree.
 Each key in the mapping uniquely identifies a node in the graph.[1]
 
-[1]: The identifier does *not* represent the name of a Python package, although
-     it it totally reasonable to do so. See below if you’re interested in how
-     Molt decides what keys to use.
+[1]: The identifier does *not* represent the name of a Python package (although
+     the package name could be a suitable identifier). See below if you’re
+     interested in how Molt decides what keys to use.
 
 Each dependency entry may contain one or both of the following keys:
 
@@ -68,7 +78,11 @@ Each dependency entry may contain one or both of the following keys:
 * *python*, if specified, is an object specifying a concrete package to
   install. This object must contain two keys, *name* and *version*, to specify
   the package. An optional key *sources* list one of more sources to find the
-  package from. The “default” source should be used if *sources* is left out.
+  package from. Each source key here refers to an entry in the top-level
+  `sources` section. If *sources* is left out, the tool is free to decide how
+  and where the package is fetched (e.g. consulting [pip configurations]).
+
+[pip configurations]: https://pip.pypa.io/en/stable/user_guide/#config-file
 
 (The *python* key should specify a package on a Python package index, such as
 PyPI. This may be extended in the future to include other package sources like
@@ -88,8 +102,6 @@ Each hash entry should be a string of the following form:
 where `<hashname>` and `<hashvalue>` follow the definition in [PEP 503]:
 `<hashname>` is the lowercase name of the hash function (such as
 `sha256`), and `<hashvalue>` is the hex encoded digest.
-
-[PEP 503]: https://www.python.org/dev/peps/pep-0503/
 
 If a dependency’s key is missing from the hashes mapping, any artifact
 downloaded to satify it is assumed to be valid.
