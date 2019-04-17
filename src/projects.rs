@@ -5,7 +5,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
-use dunce::simplified;
+use dunce;
 use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
@@ -68,7 +68,7 @@ pub struct Project {
 
 impl Project {
     pub fn find(directory: &Path, interpreter: Interpreter) -> Result<Self> {
-        let mut p = directory.canonicalize()?.to_path_buf();
+        let mut p = dunce::canonicalize(directory)?;
         loop {
             if !p.is_dir() {
                 continue;
@@ -142,14 +142,14 @@ impl Project {
         // same architecture).
         // cmd.env("PATH", {
         //     let p = env::var("PATH").unwrap_or_default();
-        //     let chained = iter::once(simplified(&self.bindir()?).to_owned())
+        //     let chained = iter::once(self.bindir()?).to_owned())
         //         .chain(env::split_paths(&p));
         //     env::join_paths(chained)?
         // });
 
         // I *think* this is OK? Some tools sniff it, so it might be better to
         // say we are (an equivalent of) a virtual environment.
-        cmd.env("VIRTUAL_ENV", simplified(&self.presumed_env_root()?));
+        cmd.env("VIRTUAL_ENV", self.presumed_env_root()?);
 
         // HACK: pip sniffs sys.real_prefix and sys.base_prefix to detect
         // whether it's in a virtual environment, and barks if the user sets

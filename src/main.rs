@@ -30,7 +30,7 @@ fn main() {
             match show_opts.what() {
                 args::ShowWhat::Env => {
                     let env = project.presumed_env_root().unwrap();
-                    println!("{}", dunce::simplified(&env).display());
+                    println!("{}", env.display());
                 },
             }
             std::process::exit(0);
@@ -85,7 +85,7 @@ fn main() {
             let args =
                 vec![
                     "-m", "pip", "install",
-                    "--prefix", dunce::simplified(&env).to_str().unwrap(),
+                    "--prefix", env.to_str().unwrap(),
                     "--no-warn-script-location",
                 ]
                 .into_iter()

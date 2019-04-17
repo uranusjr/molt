@@ -5,7 +5,6 @@ use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use dunce::simplified;
 use tempdir::TempDir;
 use which;
 
@@ -90,7 +89,7 @@ impl Interpreter {
         io_encoding: Option<&str>,
         pkgs: &Path,
     ) -> Result<Command> {
-        let pythonpath = simplified(pkgs).to_str().ok_or_else(|| {
+        let pythonpath = pkgs.to_str().ok_or_else(|| {
             Error::PathRepresentationError(pkgs.to_owned())
         })?;
         let mut cmd = Command::new(&self.location);
@@ -125,7 +124,7 @@ impl Interpreter {
             "import virtenv; virtenv.create(\
              python=None, env_dir={:?}, prompt={:?},\
              system=False, bare=False)",
-            simplified(env_dir).to_str().ok_or_else(|| {
+            env_dir.to_str().ok_or_else(|| {
                 Error::PathRepresentationError(env_dir.to_owned())
             })?,
             prompt,
