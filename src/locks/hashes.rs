@@ -32,7 +32,7 @@ impl<'de> Deserialize<'de> for Hash {
             type Value = Hash;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct Hash")
+                formatter.write_str("hash")
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -58,10 +58,6 @@ pub struct Hashes {
 }
 
 impl Hashes {
-    fn new(hashes: HashSet<Hash>) -> Self {
-        Self { hashes }
-    }
-
     pub fn len(&self) -> usize {
         self.hashes.len()
     }
@@ -81,7 +77,7 @@ impl<'de> Deserialize<'de> for Hashes {
             type Value = Hashes;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct Hashes")
+                formatter.write_str("hash entries")
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -94,7 +90,7 @@ impl<'de> Deserialize<'de> for Hashes {
                 while let Some(v) = seq.next_element()? {
                     hashes.insert(v);
                 }
-                Ok(Hashes::new(hashes))
+                Ok(Hashes { hashes })
             }
         }
         deserializer.deserialize_seq(HashesVisitor)
@@ -118,12 +114,12 @@ mod tests {
 
     #[test]
     fn test_hashes_deserialize() {
-        let json = r#"[
+        static JSON: &str = r#"[
             "sha256:54a07c09c586b0e4c619f02a5e94e36619da8e2b053e20f594348c",
             "sha256:40523d2efb60523e113b44602298f0960e900388cf3bb6043f645c"
         ]"#;
 
-        let hashes: Hashes = from_str(json).unwrap();
+        let hashes: Hashes = from_str(JSON).unwrap();
         assert_eq!(hashes.len(), 2);
         assert!(hashes.contains(&Hash::new(
             "sha256", "54a07c09c586b0e4c619f02a5e94e36619da8e2b053e20f594348c",
