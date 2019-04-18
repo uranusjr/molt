@@ -53,19 +53,7 @@ impl<'de> Deserialize<'de> for Hash {
 }
 
 #[derive(Debug)]
-pub struct Hashes {
-    hashes: HashSet<Hash>,
-}
-
-impl Hashes {
-    pub fn len(&self) -> usize {
-        self.hashes.len()
-    }
-
-    pub fn contains(&self, value: &Hash) -> bool {
-        self.hashes.contains(value)
-    }
-}
+pub struct Hashes(HashSet<Hash>);
 
 impl<'de> Deserialize<'de> for Hashes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -90,7 +78,7 @@ impl<'de> Deserialize<'de> for Hashes {
                 while let Some(v) = seq.next_element()? {
                     hashes.insert(v);
                 }
-                Ok(Hashes { hashes })
+                Ok(Hashes(hashes))
             }
         }
         deserializer.deserialize_seq(HashesVisitor)
@@ -120,11 +108,11 @@ mod tests {
         ]"#;
 
         let hashes: Hashes = from_str(JSON).unwrap();
-        assert_eq!(hashes.len(), 2);
-        assert!(hashes.contains(&Hash::new(
+        assert_eq!(hashes.0.len(), 2);
+        assert!(hashes.0.contains(&Hash::new(
             "sha256", "54a07c09c586b0e4c619f02a5e94e36619da8e2b053e20f594348c",
         )));
-        assert!(hashes.contains(&Hash::new(
+        assert!(hashes.0.contains(&Hash::new(
             "sha256", "40523d2efb60523e113b44602298f0960e900388cf3bb6043f645c",
         )));
     }

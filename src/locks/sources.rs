@@ -10,30 +10,17 @@ use serde::de::{
 };
 
 #[derive(Debug, Eq, PartialEq)]
-struct Source {
+pub struct Source {
     name: String,
     base_url: String,
     verify_ssl: bool,
 }
 
-impl Source {
-    fn new(name: &str, base_url: &str, verify_ssl: bool) -> Self {
-        Self {
-            name: name.to_string(),
-            base_url: base_url.to_string(),
-            verify_ssl
-        }
-    }
-}
-
-struct SourceEntry {
-    base_url: String,
-    verify_ssl: bool,
-}
+struct SourceEntry(String, bool);
 
 impl SourceEntry {
     fn into_source(self, name: String) -> Source {
-        Source { name, base_url: self.base_url, verify_ssl: self.verify_ssl }
+        Source { name, base_url: self.0, verify_ssl: self.1 }
     }
 }
 
@@ -80,30 +67,14 @@ impl<'de> Deserialize<'de> for SourceEntry {
 
                 let url = url.ok_or_else(|| de::Error::missing_field("url"))?;
                 let ssl = ssl.unwrap_or(true);
-                Ok(SourceEntry { base_url: url, verify_ssl: ssl })
+                Ok(SourceEntry(url, ssl))
             }
         }
         deserializer.deserialize_map(SourceEntryVisitor)
     }
 }
 
-struct Sources {
-    sources: HashMap<String, Source>,
-}
-
-impl Sources {
-    pub fn len(&self) -> usize {
-        self.sources.len()
-    }
-
-    pub fn contains_key(&self, k: &str) -> bool {
-        self.sources.contains_key(k)
-    }
-
-    pub fn get(&self, k: &str) -> Option<&Source> {
-        self.sources.get(k)
-    }
-}
+pub struct Sources(HashMap<String, Source>);
 
 impl<'de> Deserialize<'de> for Sources {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -131,7 +102,7 @@ impl<'de> Deserialize<'de> for Sources {
                     let source = v.into_source(k.to_string());
                     sources.insert(k.to_string(), source);
                 }
-                Ok(Sources { sources })
+                Ok(Sources(sources))
             }
         }
         deserializer.deserialize_map(SourcesVisitor)
@@ -144,6 +115,16 @@ mod tests {
     use serde_json::from_str;
     use super::*;
 
+    impl Source {
+        fn new(name: &str, base_url: &str, verify_ssl: bool) -> Self {
+            Self {
+                name: name.to_string(),
+                base_url: base_url.to_string(),
+                verify_ssl
+            }
+        }
+    }
+
     #[test]
     fn test_source_mapping() {
         static JSON: &str = r#"{
@@ -155,11 +136,11 @@ mod tests {
         }"#;
 
         let sources: Sources = from_str(JSON).unwrap();
-        assert_eq!(sources.len(), 2);
-        assert_eq!(sources.get("pypi"), Some(&Source::new(
+        assert_eq!(sources.0.len(), 2);
+        assert_eq!(sources.0.get("pypi"), Some(&Source::new(
             "pypi", "https://pypi.org/simple", true,
         )));
-        assert_eq!(sources.get("alibaba"), Some(&Source::new(
+        assert_eq!(sources.0.get("alibaba"), Some(&Source::new(
             "alibaba", "https://mirrors.aliyun.com/simple", false,
         )));
     }
