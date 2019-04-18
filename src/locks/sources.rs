@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{self, Formatter};
+use std::rc::Rc;
 
 use serde::de::{
     self,
@@ -74,7 +75,14 @@ impl<'de> Deserialize<'de> for SourceEntry {
     }
 }
 
-pub struct Sources(HashMap<String, Source>);
+#[derive(Default)]
+pub struct Sources(HashMap<String, Rc<Source>>);
+
+impl Sources {
+    pub fn get(&self, key: &str) -> Option<Rc<Source>> {
+        self.0.get(key).map(|r| r.clone())
+    }
+}
 
 impl<'de> Deserialize<'de> for Sources {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -100,7 +108,7 @@ impl<'de> Deserialize<'de> for Sources {
                     let k: &str = k;
                     let v: SourceEntry = map.next_value()?;
                     let source = v.into_source(k.to_string());
-                    sources.insert(k.to_string(), source);
+                    sources.insert(k.to_string(), Rc::new(source));
                 }
                 Ok(Sources(sources))
             }
@@ -137,11 +145,13 @@ mod tests {
 
         let sources: Sources = from_str(JSON).unwrap();
         assert_eq!(sources.0.len(), 2);
-        assert_eq!(sources.0.get("pypi"), Some(&Source::new(
-            "pypi", "https://pypi.org/simple", true,
-        )));
-        assert_eq!(sources.0.get("alibaba"), Some(&Source::new(
-            "alibaba", "https://mirrors.aliyun.com/simple", false,
-        )));
+        assert_eq!(
+            **sources.0.get("pypi").unwrap(),
+            Source::new("pypi", "https://pypi.org/simple", true),
+        );
+        assert_eq!(
+            **sources.0.get("alibaba").unwrap(),
+            Source::new("alibaba", "https://mirrors.aliyun.com/simple", false),
+        );
     }
 }

@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for Hash {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Hashes(HashSet<Hash>);
 
 impl<'de> Deserialize<'de> for Hashes {

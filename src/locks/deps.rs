@@ -1,22 +1,67 @@
 use std::collections::HashMap;
 use std::fmt::{self, Formatter};
+use std::rc::Rc;
 
 use serde::de::{
+    self,
     Deserialize,
     Deserializer,
     SeqAccess,
     Visitor,
 };
 
+use super::{Hashes, Source, Sources};
+
+#[derive(Debug)]
+pub struct PythonPackage {
+    name: String,
+    version: String,
+    sources: Option<Vec<Rc<Source>>>,
+    hashes: Option<Hashes>,
+}
+
 #[derive(Debug, Deserialize, Eq, PartialEq)]
-struct PythonPackageEntry {
+pub struct PythonPackageEntry {
     name: String,
     version: String,
     sources: Option<Vec<String>>,
 }
 
+impl PythonPackageEntry {
+    fn into_python_package<'a, E>(
+        self,
+        all_sources: &'a Sources,
+        hashes: Option<Hashes>,
+    ) -> Result<PythonPackage, E>
+        where E: de::Error
+    {
+        let sources = match self.sources {
+            None => None,
+            Some(keys) => {
+                let mut objects = vec![];
+                for key in keys {
+                    if let Some(s) = all_sources.get(&key) {
+                        objects.push(s);
+                    } else {
+                        return Err(de::Error::custom(format!(
+                            "unresolvable source name {:?}", key,
+                        )));
+                    }
+                }
+                Some(objects)
+            },
+        };
+        Ok(PythonPackage {
+            name: self.name,
+            version: self.version,
+            sources,
+            hashes,
+        })
+    }
+}
+
 #[derive(Debug)]
-struct Marker(Vec<String>);
+pub struct Marker(Vec<String>);
 
 impl From<Vec<String>> for Marker {
     fn from(v: Vec<String>) -> Self {
@@ -63,12 +108,62 @@ impl<'de> Deserialize<'de> for Marker {
     }
 }
 
+#[derive(Debug)]
+pub struct Dependency {
+    python: Option<PythonPackage>,
+    dependencies: Vec<(Rc<Dependency>, Option<Marker>)>,
+}
+
+impl Dependency {
+    pub(crate) fn populate_dependencies<E>(
+        &mut self,
+        refs: HashMap<String, Option<Marker>>,
+        from: &HashMap<String, Rc<Dependency>>,
+    ) -> Result<(), E>
+        where E: de::Error
+    {
+        for (key, marker) in refs.into_iter() {
+            match from.get(&key) {
+                Some(dep) => {
+                    self.dependencies.push((dep.clone(), marker));
+                },
+                None => {
+                    return Err(de::Error::custom(format!(
+                        "unresolvable dependency key {:?}", key,
+                    )));
+                },
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
-struct DependencyEntry {
+pub(super) struct DependencyEntry {
     python: Option<PythonPackageEntry>,
 
     #[serde(default)]
     dependencies: HashMap<String, Option<Marker>>,
+}
+
+impl DependencyEntry {
+    pub(crate) fn into_unlinked_dependency<'a, E>(
+        self,
+        sources: &'a Sources,
+        hashes: Option<Hashes>,
+    ) -> Result<(Dependency, HashMap<String, Option<Marker>>), E>
+        where E: de::Error
+    {
+        let python = match self.python {
+            None => None,
+            Some(p) => match p.into_python_package(sources, hashes) {
+                Ok(p) => Some(p),
+                Err(e) => { return Err(e); },
+            },
+        };
+        let dep = Dependency { python, dependencies: vec![] };
+        Ok((dep, self.dependencies))
+    }
 }
 
 
