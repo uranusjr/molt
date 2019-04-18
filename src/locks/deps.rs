@@ -9,7 +9,7 @@ use serde::de::{
 };
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
-struct PythonDependencyEntry {
+struct PythonPackageEntry {
     name: String,
     version: String,
     sources: Option<Vec<String>>,
@@ -65,7 +65,9 @@ impl<'de> Deserialize<'de> for Marker {
 
 #[derive(Debug, Deserialize)]
 struct DependencyEntry {
-    python: PythonDependencyEntry,
+    python: Option<PythonPackageEntry>,
+
+    #[serde(default)]
     dependencies: HashMap<String, Option<Marker>>,
 }
 
@@ -90,8 +92,8 @@ mod tests {
             "sources": ["default"]
         }"#;
 
-        let entry: PythonDependencyEntry = from_str(JSON).unwrap();
-        assert_eq!(entry, PythonDependencyEntry {
+        let entry: PythonPackageEntry = from_str(JSON).unwrap();
+        assert_eq!(entry, PythonPackageEntry {
             name: String::from("certifi"),
             version: String::from("2017.7.27.1"),
             sources: Some(vec![String::from("default")]),
@@ -105,8 +107,8 @@ mod tests {
             "version": "2017.7.27.1"
         }"#;
 
-        let entry: PythonDependencyEntry = from_str(JSON).unwrap();
-        assert_eq!(entry, PythonDependencyEntry {
+        let entry: PythonPackageEntry = from_str(JSON).unwrap();
+        assert_eq!(entry, PythonPackageEntry {
             name: String::from("certifi"),
             version: String::from("2017.7.27.1"),
             sources: None,
@@ -150,10 +152,24 @@ mod tests {
             ])),
         );
 
-        assert_eq!(entry.python, PythonDependencyEntry {
+        assert_eq!(entry.python, Some(PythonPackageEntry {
             name: String::from("foo"),
             version: String::from("2.18.4"),
             sources: None,
-        });
+        }));
+    }
+
+    #[test]
+    fn test_dependency_entry_no_python() {
+        static JSON: &str = "{\"dependencies\": {}}";
+
+        let entry: DependencyEntry = from_str(JSON).unwrap();
+        assert_eq!(entry.python, None);
+    }
+
+    #[test]
+    fn test_dependency_entry_no_dependencies() {
+        let entry: DependencyEntry = from_str("{}").unwrap();
+        assert!(entry.dependencies.is_empty());
     }
 }
