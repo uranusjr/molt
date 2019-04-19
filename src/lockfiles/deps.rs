@@ -28,9 +28,9 @@ pub struct PythonPackageEntry {
 }
 
 impl PythonPackageEntry {
-    fn into_python_package<'a, E>(
+    fn into_python_package<E>(
         self,
-        all_sources: &'a Sources,
+        all_sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<PythonPackage, E>
         where E: de::Error
@@ -147,9 +147,9 @@ pub(super) struct DependencyEntry {
 }
 
 impl DependencyEntry {
-    pub(crate) fn into_unlinked_dependency<'a, E>(
+    pub(crate) fn into_unlinked_dependency<E>(
         self,
-        sources: &'a Sources,
+        sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<(Dependency, HashMap<String, Option<Marker>>), E>
         where E: de::Error
@@ -175,7 +175,7 @@ mod tests {
 
     impl From<&Marker> for Vec<String> {
         fn from(v: &Marker) -> Self {
-            v.0.iter().cloned().collect()
+            v.0.to_vec()
         }
     }
 
@@ -232,7 +232,7 @@ mod tests {
             ["bar", "baz", "qux"].iter().cloned().collect(),
         );
         assert_eq!(
-            dependencies.get("bar").map(|v| v.is_none()),
+            dependencies.get("bar").map(Option::is_none),
             Some(true),
         );
         assert_eq!(

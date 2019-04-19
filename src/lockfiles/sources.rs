@@ -80,7 +80,7 @@ pub struct Sources(HashMap<String, Rc<Source>>);
 
 impl Sources {
     pub fn get(&self, key: &str) -> Option<Rc<Source>> {
-        self.0.get(key).map(|r| r.clone())
+        self.0.get(key).map(Clone::clone)
     }
 }
 
@@ -146,11 +146,11 @@ mod tests {
         let sources: Sources = from_str(JSON).unwrap();
         assert_eq!(sources.0.len(), 2);
         assert_eq!(
-            **sources.0.get("pypi").unwrap(),
+            *sources.0["pypi"],
             Source::new("pypi", "https://pypi.org/simple", true),
         );
         assert_eq!(
-            **sources.0.get("alibaba").unwrap(),
+            *sources.0["alibaba"],
             Source::new("alibaba", "https://mirrors.aliyun.com/simple", false),
         );
     }

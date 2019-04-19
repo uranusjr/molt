@@ -1,4 +1,4 @@
-use std::collections::{HashMap, hash_map};
+use std::collections::HashMap;
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 
@@ -19,12 +19,6 @@ use super::{
 
 #[derive(Default)]
 pub struct Dependencies(HashMap<String, Rc<Dependency>>);
-
-impl Dependencies {
-    fn keys(&self) -> hash_map::Keys<String, Rc<Dependency>> {
-        self.0.keys()
-    }
-}
 
 #[allow(dead_code)]
 pub struct Lock {
@@ -127,7 +121,14 @@ impl<'de> Deserialize<'de> for Lock {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+    use std::collections::hash_map;
     use serde_json::from_str;
+
+    impl Dependencies {
+        fn keys(&self) -> hash_map::Keys<String, Rc<Dependency>> {
+            self.0.keys()
+        }
+    }
 
     #[test]
     fn test_simple_dependency_graph() {
