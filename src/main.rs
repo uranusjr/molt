@@ -14,7 +14,7 @@ extern crate which;
 
 mod commands;
 mod entrypoints;
-mod locks;
+mod lockfiles;
 mod projects;
 mod pythons;
 mod vendors;
