@@ -146,12 +146,12 @@ mod tests {
     fn test_simple_dependency_graph() {
         static JSON: &str = r#"{
             "dependencies": {
-                "foo": {
-                    "python": {"name": "Foo", "version": "2.2.0"},
-                    "dependencies": {"bar": null, "baz": ["os_name == 'nt'"]}
+                "bar": {
+                    "python": {"name": "Bar", "version": "2.2.0"},
+                    "dependencies": {"baz": null, "foo": ["os_name == 'nt'"]}
                 },
-                "bar": {},
-                "baz": {}
+                "baz": {},
+                "foo": {}
             }
         }"#;
 
@@ -159,23 +159,24 @@ mod tests {
         assert_eq!(
             lock.dependencies().map(|(k, _)| k).collect::<HashSet<_>>(),
             ["foo", "bar", "baz"].iter().cloned().collect());
-        
-        let mut deps = lock.dependencies().collect::<Vec<(_, _)>>();
+
+        let mut deps = lock.dependencies().collect::<Vec<_>>();
         deps.sort_by_key(|(k, _)| k.bytes().next());
-        assert_eq!(deps.len(), 3);
 
-        assert!((*deps[1].1).python().is_none());
-        assert!((*deps[2].1).python().is_none());
+        // 2 entries in `dependencies` don't have a `python` key.
+        assert_eq!((*deps[1].1).python().is_none(), true);
+        assert_eq!((*deps[2].1).python().is_none(), true);
 
-        assert_eq!((*deps[0].1).python().unwrap().name(), "Foo");
+        // The `bar` entry.
+        assert_eq!((*deps[0].1).python().unwrap().name(), "Bar");
 
-        let django_deps: HashSet<_> = (*deps[0].1).dependencies()
+        // The `bar` entry has two dependencies, one with markers.
+        let bar_deps: HashSet<_> = (*deps[0].1).dependencies()
             .map(|(d, m)| (d.key().to_string(), m.is_some()))
             .collect();
-        assert_eq!(django_deps, [
-            (String::from("bar"), false),
-            (String::from("baz"), true),
+        assert_eq!(bar_deps, [
+            (String::from("baz"), false),
+            (String::from("foo"), true),
         ].iter().cloned().collect::<HashSet<_>>());
-
     }
 }
