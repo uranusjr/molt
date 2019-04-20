@@ -1,6 +1,8 @@
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
+use std::slice::Iter;
 
 use serde::de::{
     self,
@@ -18,6 +20,12 @@ pub struct PythonPackage {
     version: String,
     sources: Option<Vec<Rc<Source>>>,
     hashes: Option<Hashes>,
+}
+
+impl PythonPackage {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
@@ -88,7 +96,7 @@ impl<'de> Deserialize<'de> for Marker {
             type Value = Marker;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("marker strings")
+                formatter.write_str("null or marker array")
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -108,17 +116,41 @@ impl<'de> Deserialize<'de> for Marker {
     }
 }
 
+pub struct Dependencies<'a>(
+    Iter<'a, (Rc<RefCell<Dependency>>, Option<Marker>)>,
+);
+
+impl<'a> Iterator for Dependencies<'a> {
+    type Item = (Ref<'a, Dependency>, Option<&'a Marker>);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(d, m)| ((*d).borrow(), m.as_ref()))
+    }
+}
+
 #[derive(Debug)]
 pub struct Dependency {
+    key: String,
     python: Option<PythonPackage>,
-    dependencies: Vec<(Rc<Dependency>, Option<Marker>)>,
+    dependencies: Vec<(Rc<RefCell<Dependency>>, Option<Marker>)>,
 }
 
 impl Dependency {
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn python(&self) -> Option<&PythonPackage> {
+        self.python.as_ref()
+    }
+
+    pub fn dependencies(&self) -> Dependencies {
+        Dependencies(self.dependencies.iter())
+    }
+
     pub(crate) fn populate_dependencies<E>(
         &mut self,
         refs: HashMap<String, Option<Marker>>,
-        from: &HashMap<String, Rc<Dependency>>,
+        from: &HashMap<String, Rc<RefCell<Dependency>>>,
     ) -> Result<(), E>
         where E: de::Error
     {
@@ -149,6 +181,7 @@ pub(super) struct DependencyEntry {
 impl DependencyEntry {
     pub(crate) fn into_unlinked_dependency<E>(
         self,
+        key: String,
         sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<(Dependency, HashMap<String, Option<Marker>>), E>
@@ -161,7 +194,7 @@ impl DependencyEntry {
                 Err(e) => { return Err(e); },
             },
         };
-        let dep = Dependency { python, dependencies: vec![] };
+        let dep = Dependency { key, python, dependencies: vec![] };
         Ok((dep, self.dependencies))
     }
 }

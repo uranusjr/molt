@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::cell::{Ref, RefCell};
+use std::collections::{HashMap, hash_map};
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 
@@ -18,12 +19,29 @@ use super::{
 };
 
 #[derive(Default)]
-pub struct Dependencies(HashMap<String, Rc<Dependency>>);
+pub struct Dependencies(HashMap<String, DependencyRef>);
+
+type DependencyRef = Rc<RefCell<Dependency>>;
+
+pub struct IterDependency<'a>(hash_map::Iter<'a, String, DependencyRef>);
+
+impl<'a> Iterator for IterDependency<'a> {
+    type Item = (&'a str, Ref<'a, Dependency>);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, v)| (k.as_str(), (*v).borrow()))
+    }
+}
 
 #[allow(dead_code)]
 pub struct Lock {
     sources: Sources,
     dependencies: Dependencies,
+}
+
+impl<'a> Lock {
+    fn dependencies(&self) -> IterDependency {
+        IterDependency(self.dependencies.0.iter())
+    }
 }
 
 impl<'de> Deserialize<'de> for Lock {
@@ -47,7 +65,7 @@ impl<'de> Deserialize<'de> for Lock {
                 where A: MapAccess<'de>
             {
                 let mut sources: Option<Sources> = None;
-                let mut deps: Option<HashMap<String, DependencyEntry>> = None;
+                let mut dents: Option<HashMap<String, DependencyEntry>> = None;
                 let mut hashes: Option<HashMap<String, Hashes>> = None;
 
                 while let Some(key) = map.next_key()? {
@@ -61,12 +79,12 @@ impl<'de> Deserialize<'de> for Lock {
                             sources = Some(map.next_value::<Sources>()?);
                         },
                         Field::Dependencies => {
-                            if deps.is_some() {
+                            if dents.is_some() {
                                 return Err(de::Error::duplicate_field(
                                     "dependencies",
                                 ));
                             }
-                            deps = Some(map.next_value()?);
+                            dents = Some(map.next_value()?);
                         },
                         Field::Hashes => {
                             if hashes.is_some() {
@@ -85,32 +103,33 @@ impl<'de> Deserialize<'de> for Lock {
                 // Convert the dependencies into semi-concrete objects, with
                 // hashes injected and sources resolved, but edges are not
                 // connected at this point.
-                let mut dependencies = HashMap::new();
+                let mut deps = HashMap::new();
                 let mut links = HashMap::new();
-                for (k, v) in deps.unwrap_or_default().into_iter() {
-                    let hs = hashes.remove(&k);
-                    let dp = v.into_unlinked_dependency(&sources, hs);
+                for (k, v) in dents.unwrap_or_default().into_iter() {
+                    let hash = hashes.remove(&k);
+                    let dp = v.into_unlinked_dependency(
+                        k.to_string(), &sources, hash,
+                    );
                     let (dep, link) = match dp {
                         Ok(d) => d,
                         Err(e) => { return Err(e); },
                     };
-                    dependencies.insert(k.to_string(), Rc::new(dep));
+                    deps.insert(
+                        k.to_string(),
+                        Rc::new(RefCell::new(dep)));
                     links.insert(k, link);
                 }
 
-                // Connect the edges. I guess the copy is needed because we
-                // cannot modify contens in dependencies while referencing it?
-                let copied: HashMap<_, _> = dependencies.iter().map(|(k, v)| {
-                    (k.to_string(), v.clone())
-                }).collect();
-                for (k, v) in dependencies.iter_mut() {
-                    Rc::get_mut(v).unwrap().populate_dependencies(
+                // Connect the edges.
+                for (k, v) in deps.iter().map(|(k, v)| (k, v.clone())) {
+                    v.borrow_mut().populate_dependencies(
                         links.remove(k).unwrap(),
-                        &copied,
+                        &deps,
                     )?;
                 }
 
-                Ok(Lock { sources, dependencies: Dependencies(dependencies) })
+                let dependencies = Dependencies(deps);
+                Ok(Lock { sources, dependencies })
             }
         }
         deserializer.deserialize_map(LockVisitor)
@@ -121,33 +140,42 @@ impl<'de> Deserialize<'de> for Lock {
 mod tests {
     use super::*;
     use std::collections::HashSet;
-    use std::collections::hash_map;
     use serde_json::from_str;
-
-    impl Dependencies {
-        fn keys(&self) -> hash_map::Keys<String, Rc<Dependency>> {
-            self.0.keys()
-        }
-    }
 
     #[test]
     fn test_simple_dependency_graph() {
         static JSON: &str = r#"{
             "dependencies": {
-                "django": {
-                    "python": {"name": "Django", "version": "2.2.0"},
-                    "dependencies": {"pytz": null, "sqlparse": null}
+                "foo": {
+                    "python": {"name": "Foo", "version": "2.2.0"},
+                    "dependencies": {"bar": null, "baz": ["os_name == 'nt'"]}
                 },
-                "pytz": {},
-                "sqlparse": {}
+                "bar": {},
+                "baz": {}
             }
         }"#;
 
         let lock: Lock = from_str(JSON).unwrap();
         assert_eq!(
-            lock.dependencies.keys()
-                .map(String::as_str)
-                .collect::<HashSet<&str>>(),
-            ["django", "pytz", "sqlparse"].iter().cloned().collect());
+            lock.dependencies().map(|(k, _)| k).collect::<HashSet<_>>(),
+            ["foo", "bar", "baz"].iter().cloned().collect());
+        
+        let mut deps = lock.dependencies().collect::<Vec<(_, _)>>();
+        deps.sort_by_key(|(k, _)| k.bytes().next());
+        assert_eq!(deps.len(), 3);
+
+        assert!((*deps[1].1).python().is_none());
+        assert!((*deps[2].1).python().is_none());
+
+        assert_eq!((*deps[0].1).python().unwrap().name(), "Foo");
+
+        let django_deps: HashSet<_> = (*deps[0].1).dependencies()
+            .map(|(d, m)| (d.key().to_string(), m.is_some()))
+            .collect();
+        assert_eq!(django_deps, [
+            (String::from("bar"), false),
+            (String::from("baz"), true),
+        ].iter().cloned().collect::<HashSet<_>>());
+
     }
 }

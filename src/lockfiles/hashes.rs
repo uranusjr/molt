@@ -65,7 +65,7 @@ impl<'de> Deserialize<'de> for Hashes {
             type Value = Hashes;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("hash entries")
+                formatter.write_str("hash array")
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>

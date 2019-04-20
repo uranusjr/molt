@@ -94,7 +94,7 @@ impl<'de> Deserialize<'de> for Sources {
             type Value = Sources;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("source entries")
+                formatter.write_str("source array")
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
