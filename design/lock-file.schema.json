@@ -12,10 +12,15 @@
                         "python": {
                             "name": {"type": "string"},
                             "version": {"type": "string"},
+                            "url": {"type": "string"},
                             "sources": {
                                 "type": "array",
                                 "items": {"type": "string"}
-                            }
+                            },
+                            "oneOf": [
+                                {"required": ["name", "version"]},
+                                {"required": ["name", "url"]}
+                            ]
                         },
                         "dependencies": {
                             "type": "array",

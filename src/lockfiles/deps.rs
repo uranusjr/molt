@@ -8,16 +8,23 @@ use serde::de::{
     self,
     Deserialize,
     Deserializer,
+    MapAccess,
     SeqAccess,
     Visitor,
 };
 
 use super::{Hashes, Source, Sources};
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum PythonPackageSpecifier {
+    Version(String),
+    Url(String),
+}
+
 #[derive(Debug)]
 pub struct PythonPackage {
     name: String,
-    version: String,
+    specifier: PythonPackageSpecifier,
     sources: Option<Vec<Rc<Source>>>,
     hashes: Option<Hashes>,
 }
@@ -28,10 +35,10 @@ impl PythonPackage {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct PythonPackageEntry {
     name: String,
-    version: String,
+    specifier: PythonPackageSpecifier,
     sources: Option<Vec<String>>,
 }
 
@@ -61,10 +68,103 @@ impl PythonPackageEntry {
         };
         Ok(PythonPackage {
             name: self.name,
-            version: self.version,
+            specifier: self.specifier,
             sources,
             hashes,
         })
+    }
+}
+
+impl<'de> Deserialize<'de> for PythonPackageEntry {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "snake_case")]
+        enum Field { Name, Sources, Version, Url }
+
+        struct PythonPackageEntryVisitor;
+
+        impl<'de> Visitor<'de> for PythonPackageEntryVisitor {
+            type Value = PythonPackageEntry;
+
+            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+                formatter.write_str("Python package specification")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+                where A: MapAccess<'de>
+            {
+                let mut name: Option<String> = None;
+                let mut specifier: Option<PythonPackageSpecifier> = None;
+                let mut sources: Option<Vec<String>> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Name => {
+                            if name.is_some() {
+                                return Err(de::Error::duplicate_field("name"));
+                            }
+                            name = Some(map.next_value()?);
+                        },
+                        Field::Sources => {
+                            if sources.is_some() {
+                                return Err(de::Error::duplicate_field(
+                                    "sources",
+                                ));
+                            }
+                            sources = Some(map.next_value()?);
+                        },
+                        Field::Version => {
+                            match specifier {
+                                None => {},
+                                Some(PythonPackageSpecifier::Version(_)) => {
+                                    return Err(de::Error::duplicate_field(
+                                        "version",
+                                    ));
+                                },
+                                Some(PythonPackageSpecifier::Url(_)) => {
+                                    return Err(de::Error::custom(
+                                        "cannot specify both `version` and \
+                                         `url` for a Python package",
+                                    ));
+                                },
+                            }
+                            specifier = Some(PythonPackageSpecifier::Version(
+                                map.next_value()?,
+                            ));
+                        },
+                        Field::Url => {
+                            match specifier {
+                                None => {},
+                                Some(PythonPackageSpecifier::Url(_)) => {
+                                    return Err(de::Error::duplicate_field(
+                                        "url",
+                                    ));
+                                },
+                                Some(PythonPackageSpecifier::Version(_)) => {
+                                    return Err(de::Error::custom(
+                                        "cannot specify both `version` and \
+                                         `url` for a Python package",
+                                    ));
+                                },
+                            }
+                            specifier = Some(PythonPackageSpecifier::Url(
+                                map.next_value()?,
+                            ));
+                        },
+                    }
+                }
+
+                let name = name.ok_or_else(|| {
+                    de::Error::missing_field("name")
+                })?;
+                let specifier = specifier.ok_or_else(|| {
+                    de::Error::missing_field("`version` or `url`")
+                })?;
+                Ok(PythonPackageEntry { name, specifier, sources })
+            }
+        }
+        deserializer.deserialize_map(PythonPackageEntryVisitor)
     }
 }
 
@@ -223,7 +323,9 @@ mod tests {
         let entry: PythonPackageEntry = from_str(JSON).unwrap();
         assert_eq!(entry, PythonPackageEntry {
             name: String::from("certifi"),
-            version: String::from("2017.7.27.1"),
+            specifier: PythonPackageSpecifier::Version(
+                String::from("2017.7.27.1"),
+            ),
             sources: Some(vec![String::from("default")]),
         });
     }
@@ -238,7 +340,9 @@ mod tests {
         let entry: PythonPackageEntry = from_str(JSON).unwrap();
         assert_eq!(entry, PythonPackageEntry {
             name: String::from("certifi"),
-            version: String::from("2017.7.27.1"),
+            specifier: PythonPackageSpecifier::Version(
+                String::from("2017.7.27.1"),
+            ),
             sources: None,
         });
     }
@@ -282,7 +386,7 @@ mod tests {
 
         assert_eq!(entry.python, Some(PythonPackageEntry {
             name: String::from("foo"),
-            version: String::from("2.18.4"),
+            specifier: PythonPackageSpecifier::Version(String::from("2.18.4")),
             sources: None,
         }));
     }

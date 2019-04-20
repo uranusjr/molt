@@ -51,7 +51,7 @@ impl<'de> Deserialize<'de> for SourceEntry {
                     match key {
                         Field::Url => {
                             if url.is_some() {
-                                return Err(de::Error::duplicate_field("name"));
+                                return Err(de::Error::duplicate_field("url"));
                             }
                             url = Some(map.next_value()?);
                         },
