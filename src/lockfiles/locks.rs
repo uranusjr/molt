@@ -148,9 +148,9 @@ mod tests {
             "dependencies": {
                 "bar": {
                     "python": {"name": "Bar", "version": "2.2.0"},
-                    "dependencies": {"buz": null, "foo": ["os_name == 'nt'"]}
+                    "dependencies": {"baz": null, "foo": ["os_name == 'nt'"]}
                 },
-                "buz": {},
+                "baz": {},
                 "foo": {}
             }
         }"#;
@@ -158,14 +158,14 @@ mod tests {
         let lock: Lock = from_str(JSON).unwrap();
         assert_eq!(
             lock.dependencies().map(|(k, _)| k).collect::<HashSet<_>>(),
-            ["foo", "bar", "buz"].iter().cloned().collect());
+            ["foo", "bar", "baz"].iter().cloned().collect());
 
         let mut deps = lock.dependencies().collect::<Vec<_>>();
-        deps.sort_by_key(|(k, _)| k.bytes().next());
+        deps.sort_by_key(|(k, _)| k.bytes().collect::<Vec<_>>());
 
         // 2 entries in `dependencies` don't have a `python` key.
-        // assert_eq!((*deps[1].1).python().is_none(), true);
-        // assert_eq!((*deps[2].1).python().is_none(), true);
+        assert_eq!((*deps[1].1).python().is_none(), true);
+        assert_eq!((*deps[2].1).python().is_none(), true);
 
         // The `bar` entry.
         assert_eq!((*deps[0].1).python().unwrap().name(), "Bar");
@@ -175,7 +175,7 @@ mod tests {
             .map(|(d, m)| (d.key().to_string(), m.is_some()))
             .collect();
         assert_eq!(bar_deps, [
-            (String::from("buz"), false),
+            (String::from("baz"), false),
             (String::from("foo"), true),
         ].iter().cloned().collect::<HashSet<_>>());
     }
