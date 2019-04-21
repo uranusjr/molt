@@ -76,11 +76,12 @@ Each dependency entry may contain one or both of the following keys:
   the dependency unconditionally. (Note: No marker merging is done here; see
   discussion below for reasoning.)
 * *python*, if specified, is an object specifying a concrete package to
-  install. This object must contain two keys, *name* and *version*, to specify
-  the package. An optional key *sources* list one of more sources to find the
-  package from. Each source key here refers to an entry in the top-level
-  `sources` section. If *sources* is left out, the tool is free to decide how
-  and where the package is fetched (e.g. consulting [pip configurations]).
+  install. This object must contain one key, *name* to specify the package, and
+  one of *version* or *url* to specify the version. An optional key *sources*
+  list one of more sources to find the package from. Each source key here
+  refers to an entry in the top-level `sources` section. If *sources* is left
+  out, the tool is free to decide how and where the package is fetched (e.g.
+  consulting [pip configurations]).
 
 [pip configurations]: https://pip.pypa.io/en/stable/user_guide/#config-file
 

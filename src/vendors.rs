@@ -3,7 +3,7 @@ use std::io::{Result, Write};
 use std::path::Path;
 
 macro_rules! populate {
-    ($em:ident, $dir:ident) => {
+    ($em:ident, $dir:expr) => {
         {
             for e in $em::iter() {
                 let filename = e.into_owned();
