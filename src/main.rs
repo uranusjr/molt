@@ -17,11 +17,8 @@ mod pythons;
 mod vendors;
 
 fn main() {
-    match commands::dispatch() {
-        Ok(_) => {},
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(e.status());
-        },
+    if let Err(e) = commands::dispatch() {
+        eprintln!("{}", e);
+        std::process::exit(e.status());
     }
 }
