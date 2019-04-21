@@ -39,6 +39,7 @@ pub struct Lock {
 }
 
 impl<'a> Lock {
+    #[allow(dead_code)]
     fn dependencies(&self) -> IterDependency {
         IterDependency(self.dependencies.0.iter())
     }

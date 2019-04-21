@@ -30,6 +30,7 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
+    #[allow(dead_code)]
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -216,6 +217,7 @@ impl<'de> Deserialize<'de> for Marker {
     }
 }
 
+
 pub struct Dependencies<'a>(
     Iter<'a, (Rc<RefCell<Dependency>>, Option<Marker>)>,
 );
@@ -235,14 +237,17 @@ pub struct Dependency {
 }
 
 impl Dependency {
+    #[allow(dead_code)]
     pub fn key(&self) -> &str {
         &self.key
     }
 
+    #[allow(dead_code)]
     pub fn python(&self) -> Option<&PythonPackage> {
         self.python.as_ref()
     }
 
+    #[allow(dead_code)]
     pub fn dependencies(&self) -> Dependencies {
         Dependencies(self.dependencies.iter())
     }
