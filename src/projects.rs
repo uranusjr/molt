@@ -89,8 +89,14 @@ impl Project {
         Self::find(&env::current_dir()?, interpreter)
     }
 
+    // TODO: We might be able to remove this after removing pip-install.
     pub fn base_interpreter(&self) -> &Interpreter {
         &self.interpreter
+    }
+
+    pub fn command(&self, io_encoding: Option<&str>) -> Result<Command> {
+        self.interpreter.command(io_encoding, &self.site_packages()?)
+            .map_err(Error::from)
     }
 
     fn pypackages(&self) -> PathBuf {

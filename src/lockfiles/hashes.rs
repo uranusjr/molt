@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, hash_set};
 use std::fmt::{self, Formatter};
 
 use serde::de::{
@@ -10,7 +10,7 @@ use serde::de::{
     Visitor,
 };
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Hash {
     name: String,
     value: String,
@@ -19,6 +19,12 @@ pub struct Hash {
 impl Hash {
     fn new(name: &str, value: &str) -> Self {
         Self { name: name.to_string(), value: value.to_string() }
+    }
+}
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.name, self.value)
     }
 }
 
@@ -52,8 +58,14 @@ impl<'de> Deserialize<'de> for Hash {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Hashes(HashSet<Hash>);
+
+impl Hashes {
+    pub fn iter(&self) -> hash_set::Iter<Hash> {
+        self.0.iter()
+    }
+}
 
 impl<'de> Deserialize<'de> for Hashes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

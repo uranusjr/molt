@@ -40,3 +40,13 @@ impl Pep425 {
         populate!(Self, dir)
     }
 }
+
+#[derive(RustEmbed)]
+#[folder = "assets/packaging"]
+pub struct Packaging;
+
+impl Packaging {
+    pub fn populate_to(dir: &Path) -> Result<()> {
+        populate!(Self, dir)
+    }
+}

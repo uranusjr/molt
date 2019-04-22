@@ -5,7 +5,7 @@ use std::iter::empty;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use tempdir::TempDir;
+use tempfile::TempDir;
 use which;
 
 use crate::vendors;
@@ -117,7 +117,7 @@ impl Interpreter {
     }
 
     pub fn create_venv(&self, env_dir: &Path, prompt: &str) -> Result<()> {
-        let tmp_dir = TempDir::new("molt-virtenv")?;
+        let tmp_dir = TempDir::new()?;
         vendors::VirtEnv::populate_to(tmp_dir.path())?;
 
         let code = format!(
@@ -145,7 +145,7 @@ impl Interpreter {
             return Ok(s.to_string());
         }
 
-        let tmp_dir = TempDir::new("molt-pep425")?;
+        let tmp_dir = TempDir::new()?;
         vendors::Pep425::populate_to(tmp_dir.path())?;
 
         let out = self.interpret(

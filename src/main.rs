@@ -8,8 +8,9 @@ extern crate dunce;
 extern crate ini;
 extern crate regex;
 extern crate serde_json;
-extern crate tempdir;
+extern crate tempfile;
 extern crate unindent;
+extern crate url;
 extern crate which;
 
 mod commands;
@@ -17,6 +18,7 @@ mod entrypoints;
 mod lockfiles;
 mod projects;
 mod pythons;
+mod sync;
 mod vendors;
 
 fn main() {

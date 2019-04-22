@@ -13,6 +13,7 @@ rust-embed = "4.3"
 rust-ini = "0.13"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tempdir = "0.3"
+tempfile = "3.0"
 unindent = "0.1"
+url = "1.7"
 which = "2.0"

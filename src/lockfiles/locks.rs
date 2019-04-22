@@ -18,9 +18,6 @@ use super::{
     Sources,
 };
 
-#[derive(Default)]
-pub struct Dependencies(HashMap<String, DependencyRef>);
-
 type DependencyRef = Rc<RefCell<Dependency>>;
 
 pub struct IterDependency<'a>(hash_map::Iter<'a, String, DependencyRef>);
@@ -28,7 +25,25 @@ pub struct IterDependency<'a>(hash_map::Iter<'a, String, DependencyRef>);
 impl<'a> Iterator for IterDependency<'a> {
     type Item = (&'a str, Ref<'a, Dependency>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, v)| (k.as_str(), (*v).borrow()))
+        self.0.next().map(|(k, v)| (k.as_str(), v.borrow()))
+    }
+}
+
+#[derive(Default)]
+pub struct Dependencies(HashMap<String, DependencyRef>);
+
+impl Dependencies {
+    pub fn default(&self) -> Option<Ref<Dependency>> {
+        self.0.get("").map(|r| r.borrow())
+    }
+
+    pub fn extra(&self, extra: &str) -> Option<Ref<Dependency>> {
+        self.0.get(&format!("[{}]", extra)).map(|r| r.borrow())
+    }
+
+    #[allow(dead_code)]
+    pub fn iter(&self) -> IterDependency {
+        IterDependency(self.0.iter())
     }
 }
 
@@ -39,9 +54,8 @@ pub struct Lock {
 }
 
 impl<'a> Lock {
-    #[allow(dead_code)]
-    fn dependencies(&self) -> IterDependency {
-        IterDependency(self.dependencies.0.iter())
+    pub fn dependencies(&self) -> &Dependencies {
+        &self.dependencies
     }
 }
 
@@ -158,21 +172,21 @@ mod tests {
 
         let lock: Lock = from_str(JSON).unwrap();
         assert_eq!(
-            lock.dependencies().map(|(k, _)| k).collect::<HashSet<_>>(),
+            lock.dependencies().iter().map(|(k, _)| k).collect::<HashSet<_>>(),
             ["foo", "bar", "baz"].iter().cloned().collect());
 
-        let mut deps = lock.dependencies().collect::<Vec<_>>();
+        let mut deps = lock.dependencies().iter().collect::<Vec<_>>();
         deps.sort_by_key(|(k, _)| k.bytes().collect::<Vec<_>>());
 
         // 2 entries in `dependencies` don't have a `python` key.
-        assert_eq!((*deps[1].1).python().is_none(), true);
-        assert_eq!((*deps[2].1).python().is_none(), true);
+        assert_eq!(deps[1].1.python().is_none(), true);
+        assert_eq!(deps[2].1.python().is_none(), true);
 
         // The `bar` entry.
-        assert_eq!((*deps[0].1).python().unwrap().name(), "Bar");
+        assert_eq!(deps[0].1.python().unwrap().name(), "Bar");
 
         // The `bar` entry has two dependencies, one with markers.
-        let bar_deps: HashSet<_> = (*deps[0].1).dependencies()
+        let bar_deps: HashSet<_> = deps[0].1.dependencies().iter()
             .map(|(d, m)| (d.key().to_string(), m.is_some()))
             .collect();
         assert_eq!(bar_deps, [

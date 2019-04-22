@@ -7,21 +7,32 @@ use serde::de::{
     Deserialize,
     Deserializer,
     MapAccess,
+    Unexpected,
     Visitor,
 };
+use url::Url;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Source {
     name: String,
-    base_url: String,
-    verify_ssl: bool,
+    base_url: Url,
+    no_verify_ssl: bool,
 }
 
-struct SourceEntry(String, bool);
+impl Source {
+    pub fn base_url(&self) -> &Url {
+        &self.base_url
+    }
+    pub fn no_verify_ssl(&self) -> bool {
+        self.no_verify_ssl
+    }
+}
+
+struct SourceEntry(Url, bool);
 
 impl SourceEntry {
     fn into_source(self, name: String) -> Source {
-        Source { name, base_url: self.0, verify_ssl: self.1 }
+        Source { name, base_url: self.0, no_verify_ssl: self.1 }
     }
 }
 
@@ -39,7 +50,7 @@ impl<'de> Deserialize<'de> for SourceEntry {
             type Value = SourceEntry;
 
             fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("`url` or `no_verify_ssl`")
+                formatter.write_str("`url` or `no_ssl_verified`")
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -58,16 +69,19 @@ impl<'de> Deserialize<'de> for SourceEntry {
                         Field::NoVerifySsl => {
                             if ssl.is_some() {
                                 return Err(de::Error::duplicate_field(
-                                    "no_verify_ssl",
+                                    "no_ssl_verified",
                                 ));
                             }
-                            ssl = Some(!map.next_value()?);
+                            ssl = Some(map.next_value()?);
                         },
                     }
                 }
 
                 let url = url.ok_or_else(|| de::Error::missing_field("url"))?;
-                let ssl = ssl.unwrap_or(true);
+                let url = Url::parse(&url).map_err(|_| {
+                    de::Error::invalid_value(Unexpected::Str(&url), &"URL")
+                })?;
+                let ssl = ssl.unwrap_or_default();
                 Ok(SourceEntry(url, ssl))
             }
         }
@@ -124,11 +138,11 @@ mod tests {
     use super::*;
 
     impl Source {
-        fn new(name: &str, base_url: &str, verify_ssl: bool) -> Self {
+        fn new(name: &str, base_url: &str, no_verify_ssl: bool) -> Self {
             Self {
                 name: name.to_string(),
-                base_url: base_url.to_string(),
-                verify_ssl
+                base_url: Url::parse(base_url).unwrap(),
+                no_verify_ssl
             }
         }
     }
@@ -147,11 +161,11 @@ mod tests {
         assert_eq!(sources.0.len(), 2);
         assert_eq!(
             *sources.0["pypi"],
-            Source::new("pypi", "https://pypi.org/simple", true),
+            Source::new("pypi", "https://pypi.org/simple", false),
         );
         assert_eq!(
             *sources.0["alibaba"],
-            Source::new("alibaba", "https://mirrors.aliyun.com/simple", false),
+            Source::new("alibaba", "https://mirrors.aliyun.com/simple", true),
         );
     }
 }

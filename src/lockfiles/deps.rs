@@ -10,18 +10,20 @@ use serde::de::{
     Deserializer,
     MapAccess,
     SeqAccess,
+    Unexpected,
     Visitor,
 };
+use url::Url;
 
 use super::{Hashes, Source, Sources};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PythonPackageSpecifier {
     Version(String),
-    Url(String),
+    Url(url::Url),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PythonPackage {
     name: String,
     specifier: PythonPackageSpecifier,
@@ -30,9 +32,43 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
-    #[allow(dead_code)]
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn to_requirement(&self) -> String {
+        let mut args = vec![];
+
+        args.push(match self.specifier {
+            PythonPackageSpecifier::Version(ref version) => {
+                format!("{} == {}", self.name, version)
+            },
+            PythonPackageSpecifier::Url(ref url) => {
+                format!("{} @ {}", self.name, url)
+            },
+        });
+
+        if let Some(ref sources) = self.sources {
+            for (i, source) in sources.iter().enumerate() {
+                let arg = if i == 0 {
+                    "--index-url"
+                } else {
+                    "--extra-index-url"
+                };
+                args.push(format!("{}={}", arg, source.base_url()));
+                if source.no_verify_ssl() {
+                    if let Some(host) = source.base_url().host_str() {
+                        args.push(format!("--trusted-host={}", host));
+                    }
+                }
+            }
+        }
+
+        if let Some(ref hashes) = self.hashes {
+            args.push(String::from("--require-hashes"));
+            for hash in hashes.iter() {
+                args.push(String::from("--hash"));
+                args.push(format!("{}", hash));
+            }
+        }
+
+        args.join(" ")
     }
 }
 
@@ -149,9 +185,13 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
                                     ));
                                 },
                             }
-                            specifier = Some(PythonPackageSpecifier::Url(
-                                map.next_value()?,
-                            ));
+                            let url = map.next_value()?;
+                            let url = Url::parse(url).map_err(|_| {
+                                de::Error::invalid_value(
+                                    Unexpected::Str(&url), &"URL",
+                                )
+                            })?;
+                            specifier = Some(PythonPackageSpecifier::Url(url));
                         },
                     }
                 }
@@ -169,8 +209,14 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Marker(Vec<String>);
+
+impl Marker {
+    pub fn iter(&self) -> Iter<String> {
+        self.0.iter()
+    }
+}
 
 impl From<Vec<String>> for Marker {
     fn from(v: Vec<String>) -> Self {
@@ -217,15 +263,22 @@ impl<'de> Deserialize<'de> for Marker {
     }
 }
 
+type DependencyRef = Rc<RefCell<Dependency>>;
 
-pub struct Dependencies<'a>(
-    Iter<'a, (Rc<RefCell<Dependency>>, Option<Marker>)>,
-);
+pub struct IterDependency<'a>(Iter<'a, (DependencyRef, Option<Marker>)>);
 
-impl<'a> Iterator for Dependencies<'a> {
+impl<'a> Iterator for IterDependency<'a> {
     type Item = (Ref<'a, Dependency>, Option<&'a Marker>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(d, m)| ((*d).borrow(), m.as_ref()))
+        self.0.next().map(|(d, m)| (d.borrow(), m.as_ref()))
+    }
+}
+
+pub struct Dependencies<'a>(&'a Vec<(DependencyRef, Option<Marker>)>);
+
+impl<'a> Dependencies<'a> {
+    pub fn iter(&self) -> IterDependency {
+        IterDependency(self.0.iter())
     }
 }
 
@@ -233,7 +286,7 @@ impl<'a> Iterator for Dependencies<'a> {
 pub struct Dependency {
     key: String,
     python: Option<PythonPackage>,
-    dependencies: Vec<(Rc<RefCell<Dependency>>, Option<Marker>)>,
+    dependencies: Vec<(DependencyRef, Option<Marker>)>,
 }
 
 impl Dependency {
@@ -249,7 +302,7 @@ impl Dependency {
 
     #[allow(dead_code)]
     pub fn dependencies(&self) -> Dependencies {
-        Dependencies(self.dependencies.iter())
+        Dependencies(&self.dependencies)
     }
 
     pub(crate) fn populate_dependencies<E>(
