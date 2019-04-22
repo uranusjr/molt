@@ -158,32 +158,34 @@ impl Synchronizer {
         project: &Project,
         packages: &HashMap<String, PythonPackage>,
     ) -> Result<()> {
+        let mut tf = NamedTempFile::new()?;
         for package in packages.values() {
-            let mut tf = NamedTempFile::new()?;
             writeln!(tf, "{}", package.to_requirement())?;
-
-            let requirement = tf.path().to_str().ok_or_else(|| {
-                Error::PathRepresentationError(tf.path().to_path_buf())
-            })?;
-            let env = project.presumed_env_root()?;
-            let env = env.to_str().ok_or_else(|| {
-                Error::PathRepresentationError(tf.path().to_path_buf())
-            })?;
-
-            let status = project.command(None)?
-                .args(&[
-                    "-m", "pip", "install",
-                    "--requirement", requirement,
-                    "--prefix", env,
-                    "--quiet",
-                ])
-                .env("PIP_NO_WARN_SCRIPT_LOCATION", "1")
-                .status()?;
-
-            if !status.success() {
-                return Err(Error::InstallCommandError(status.code()));
-            }
         }
-        Ok(())
+
+        let requirement = tf.path().to_str().ok_or_else(|| {
+            Error::PathRepresentationError(tf.path().to_path_buf())
+        })?;
+        let env = project.presumed_env_root()?;
+        let env = env.to_str().ok_or_else(|| {
+            Error::PathRepresentationError(tf.path().to_path_buf())
+        })?;
+
+        let status = project.command(None)?
+            .args(&[
+                "-m", "pip", "install",
+                "--requirement", requirement,
+                "--prefix", env,
+                "--no-deps",
+            ])
+            .env("PIP_DISABLE_PIP_VERSION_CHECK", "1")
+            .env("PIP_NO_WARN_SCRIPT_LOCATION", "1")
+            .status()?;
+
+        if status.success() {
+            Ok(())
+        } else {
+            Err(Error::InstallCommandError(status.code()))
+        }
     }
 }
