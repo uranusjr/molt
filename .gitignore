@@ -1,7 +1,6 @@
 /target
-/assets/*
+/assets/**/*
 
-!/assets/vendor.py
-!/assets/*/requirements.txt
+!/assets/*.*
 
 **/*.rs.bk

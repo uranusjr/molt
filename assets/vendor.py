@@ -20,16 +20,13 @@ def _remove(p):
 BLACKLIST_PATTERNS = [
     "bin/",
     "Scripts/",
-    "**/*.dist-info/",
+    "*.dist-info/",
     "**/__pycache__/",
     "**/*.py[co]",
 ]
 
 
-def _populate(root):
-    requirements_txt = os.path.join(root, "requirements.txt")
-    if not os.path.isfile(requirements_txt):
-        return
+def _populate(root, requirements_txt):
     subprocess.check_call([
         sys.executable, "-m", "pip", "install",
         "--disable-pip-version-check",
@@ -61,10 +58,17 @@ def _populate_pep425(root):
 
 def main():
     assets_root = os.path.dirname(__file__)
-    for child_name in os.listdir(assets_root):
+    pattern = glob.glob(os.path.join(assets_root, "requirements-*.txt"))
+    for requirements_txt in pattern:
+        if not os.path.isfile(requirements_txt):
+            continue
+        child_name = os.path.splitext(
+            os.path.basename(requirements_txt),
+        )[0].split("-", 1)[1]
         p = os.path.join(assets_root, child_name)
-        if os.path.isdir(p):
-            _populate(p)
+        if not os.path.exists(p):
+            os.makedirs(p)
+        _populate(p, requirements_txt)
     _populate_pep425(os.path.join(assets_root, "pep425"))
 
 
