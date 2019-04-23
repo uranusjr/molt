@@ -14,7 +14,7 @@ def _remove(p):
     if os.path.isdir(p):
         shutil.rmtree(p)
     else:
-        p.unlink()
+        os.unlink(p)
 
 
 BLACKLIST_PATTERNS = [
@@ -40,7 +40,7 @@ def _populate(root):
         "--no-deps",
         "--progress-bar=off",
         "--upgrade",
-    ])
+    ], env={"PIP_REQUIRE_VIRTUALENV": "false"})
     for entry in BLACKLIST_PATTERNS:
         for path in glob.glob(os.path.join(root, entry)):
             _remove(path)
