@@ -32,7 +32,7 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
-    pub fn to_requirement(&self) -> String {
+    pub fn to_requirement_txt(&self) -> (bool, String) {
         let mut args = vec![];
 
         args.push(match self.specifier {
@@ -40,7 +40,9 @@ impl PythonPackage {
                 format!("{} == {}", self.name, version)
             },
             PythonPackageSpecifier::Url(ref url) => {
-                format!("{} @ {}", self.name, url)
+                let mut url = url.clone();
+                url.set_fragment(Some(&format!("egg={}", self.name)));
+                url.to_string()
             },
         });
 
@@ -61,14 +63,13 @@ impl PythonPackage {
         }
 
         if let Some(ref hashes) = self.hashes {
-            args.push(String::from("--require-hashes"));
             for hash in hashes.iter() {
                 args.push(String::from("--hash"));
                 args.push(format!("{}", hash));
             }
         }
 
-        args.join(" ")
+        (self.hashes.is_some(), args.join(" "))
     }
 }
 

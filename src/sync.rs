@@ -16,7 +16,7 @@ use crate::vendors;
 enum Error {
     DefaultSectionNotFound,
     ExtraSectionNotFound(String),
-    InstallCommandError(Option<i32>),
+    InstallCommandError(Vec<(String, Option<i32>)>),
     InterpreterError(pythons::Error),
     InvalidMarkerError(String, String),
     PathRepresentationError(PathBuf),
@@ -158,34 +158,54 @@ impl Synchronizer {
         project: &Project,
         packages: &HashMap<String, PythonPackage>,
     ) -> Result<()> {
-        let mut tf = NamedTempFile::new()?;
-        for package in packages.values() {
-            writeln!(tf, "{}", package.to_requirement())?;
-        }
-
-        let requirement = tf.path().to_str().ok_or_else(|| {
-            Error::PathRepresentationError(tf.path().to_path_buf())
-        })?;
         let env = project.presumed_env_root()?;
         let env = env.to_str().ok_or_else(|| {
-            Error::PathRepresentationError(tf.path().to_path_buf())
+            Error::PathRepresentationError(env.to_path_buf())
         })?;
 
-        let status = project.command(None)?
-            .args(&[
+        let mut requirements = HashMap::new();
+        for (key, package) in packages.iter() {
+            let (hashed, requirement_txt) = package.to_requirement_txt();
+            let mut f = NamedTempFile::new()?;
+            writeln!(f, "{}", requirement_txt)?;
+
+            let name = f.path().to_str().ok_or_else(|| {
+                Error::PathRepresentationError(f.path().to_path_buf())
+            })?.to_string();
+
+            // 3-tuple:
+            //  * The temporary file, for later cleanup.
+            //  * Whether hashes present.
+            //  * Path to the temporary file as string, to pass to pip.
+            // TempFile objects need to be kept around so they are not deleted.
+            requirements.insert(key, (f, hashed, name));
+        }
+
+        let mut error_context = vec![];
+
+        for (key, (_, hashed, requirement)) in requirements.into_iter() {
+            let mut cmd = project.command(None)?;
+            cmd.args(&[
                 "-m", "pip", "install",
-                "--requirement", requirement,
+                "--requirement", &requirement,
                 "--prefix", env,
                 "--no-deps",
-            ])
-            .env("PIP_DISABLE_PIP_VERSION_CHECK", "1")
-            .env("PIP_NO_WARN_SCRIPT_LOCATION", "1")
-            .status()?;
+            ]);
+            cmd.env("PIP_DISABLE_PIP_VERSION_CHECK", "1");
+            cmd.env("PIP_NO_WARN_SCRIPT_LOCATION", "1");
+            if hashed {
+                cmd.arg("--require-hashes");
+            }
+            let status = cmd.status()?;
+            if !status.success() {
+                error_context.push((key.to_string(), status.code()))
+            }
+        }
 
-        if status.success() {
+        if error_context.is_empty() {
             Ok(())
         } else {
-            Err(Error::InstallCommandError(status.code()))
+            Err(Error::InstallCommandError(error_context))
         }
     }
 }
