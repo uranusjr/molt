@@ -1,14 +1,17 @@
 use std::env;
 use std::ffi::OsStr;
 use std::fmt;
-use std::io;
+use std::fs::File;
+use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
 use dunce;
+use serde_json;
 use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
+use crate::lockfiles::Lock;
 use crate::pythons::{self, Interpreter};
 
 #[derive(Debug)]
@@ -16,6 +19,8 @@ pub enum Error {
     CommandNotFoundError(String),
     EnvironmentNotFoundError(PathBuf, String),
     EnvironmentSetupError(env::JoinPathsError),
+    LockFileNotFoundError(PathBuf),
+    LockFileInvalidError(serde_json::Error),
     ProjectNotFoundError(PathBuf),
     PythonInterpreterError(pythons::Error),
     SystemEnvironmentError(io::Error),
@@ -31,6 +36,10 @@ impl fmt::Display for Error {
                 write!(f, "environment not found for {:?} in {:?}", name, root)
             },
             Error::EnvironmentSetupError(ref e) => e.fmt(f),
+            Error::LockFileNotFoundError(ref p) => {
+                write!(f, "lock file expected but not found at {:?}", p)
+            },
+            Error::LockFileInvalidError(ref e) => e.fmt(f),
             Error::ProjectNotFoundError(ref p) => {
                 write!(f, "project not found in {:?}", p)
             },
@@ -49,6 +58,12 @@ impl From<env::JoinPathsError> for Error {
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Error {
         Error::SystemEnvironmentError(e)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        Error::LockFileInvalidError(e)
     }
 }
 
@@ -94,22 +109,48 @@ impl Project {
         &self.interpreter
     }
 
+    fn persumed_lock_file_path(&self) -> PathBuf {
+        self.root.join("molt.lock.json")
+    }
+
+    pub fn read_lock_file(&self) -> Result<Lock> {
+        let p = self.persumed_lock_file_path();
+        if !p.is_file() {
+            return Err(Error::LockFileNotFoundError(p));
+        }
+        let r = BufReader::new(File::open(p)?);
+        serde_json::from_reader(r).map_err(Error::from)
+    }
+
     pub fn command(&self, io_encoding: Option<&str>) -> Result<Command> {
-        self.interpreter.command(io_encoding, &self.site_packages()?)
+        self.interpreter
+            .command(io_encoding, &self.site_packages()?)
             .map_err(Error::from)
     }
 
-    fn pypackages(&self) -> PathBuf {
+    fn persumed_pypackages(&self) -> PathBuf {
         self.root.join("__pypackages__")
     }
 
     pub fn presumed_env_root(&self) -> Result<PathBuf> {
-        self.interpreter.presumed_env_root(&self.pypackages())
-            .map_err(Error::from)
+        let pypackages = self.persumed_pypackages();
+        self.interpreter.presumed_env_root(&pypackages).map_err(Error::from)
+    }
+
+    pub fn env_root(&self) -> Result<PathBuf> {
+        let p = self.presumed_env_root()?;
+        if p.is_dir() {
+            Ok(p)
+        } else {
+            Err(Error::EnvironmentNotFoundError(
+                self.root.to_owned(), self.interpreter.name().to_owned(),
+            ))
+        }
     }
 
     fn site_packages(&self) -> Result<PathBuf> {
-        let p = self.interpreter.presumed_site_packages(&self.pypackages())?;
+        let pypackages = self.persumed_pypackages();
+        let p = self.interpreter.presumed_site_packages(&pypackages)?;
         if p.is_dir() {
             Ok(p)
         } else {
@@ -124,8 +165,7 @@ impl Project {
         #[cfg(target_os = "windows")] static BINDIR_NAME: &str = "Scripts";
         #[cfg(not(target_os = "windows"))] static BINDIR_NAME: &str = "bin";
 
-        let p = self.interpreter.presumed_env_root(&self.pypackages())?
-            .join(BINDIR_NAME);
+        let p = self.presumed_env_root()?.join(BINDIR_NAME);
         if p.is_dir() {
             Ok(p)
         } else {

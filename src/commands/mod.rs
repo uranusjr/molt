@@ -4,6 +4,7 @@ mod pip_install;
 mod py;
 mod run;
 mod show;
+mod sync;
 
 pub use self::cmd::{Error, Result};
 
@@ -35,9 +36,11 @@ pub fn dispatch() -> Result<()> {
     let matches = cmd::app().get_matches();
     match matches.subcommand_name() {
         Some("init") => subcommand!(matches, init),
-        Some("run") => subcommand!(matches, run),
         Some("py") => subcommand!(matches, py),
+        Some("run") => subcommand!(matches, run),
         Some("show") => subcommand!(matches, show),
+        Some("sync") => subcommand!(matches, sync),
+
         Some("pip-install") => subcommand!(matches, pip_install),
         Some(n) => Err(Error::UnrecognizedSubcommand(n.to_string())),
         None => Err(Error::SubCommandMissing),

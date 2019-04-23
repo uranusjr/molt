@@ -2,8 +2,10 @@
 
 use std::cell::Ref;
 use std::collections::HashMap;
+use std::fmt;
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use tempfile::{NamedTempFile, TempDir};
 use unindent::unindent;
@@ -13,7 +15,8 @@ use crate::projects::{self, Project};
 use crate::pythons::{self, Interpreter};
 use crate::vendors;
 
-enum Error {
+#[derive(Debug)]
+pub enum Error {
     DefaultSectionNotFound,
     ExtraSectionNotFound(String),
     InstallCommandError(Vec<(String, Option<i32>)>),
@@ -22,6 +25,37 @@ enum Error {
     PathRepresentationError(PathBuf),
     ProjectError(projects::Error),
     SystemError(io::Error),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::DefaultSectionNotFound => {
+                write!(f, "default section not found in lock file")
+            },
+            Error::ExtraSectionNotFound(ref s) => {
+                write!(f, "section {} not found in lock file", s)
+            },
+            Error::InstallCommandError(ref v) => {
+                for (k, c) in v {
+                    match c {
+                        Some(c) => {
+                            write!(f, "failed to install {:?} ({})", k, c)?;
+                        },
+                        None => { write!(f, "failed to install {:?}", k)?; },
+                    }
+                }
+                Ok(())
+            },
+            Error::InterpreterError(ref e) => e.fmt(f),
+            Error::InvalidMarkerError(_, ref s) => write!(f, "{}", s),
+            Error::PathRepresentationError(ref p) => {
+                write!(f, "{:?} not representable", p)
+            },
+            Error::ProjectError(ref e) => e.fmt(f),
+            Error::SystemError(ref e) => e.fmt(f),
+        }
+    }
 }
 
 impl From<io::Error> for Error {
@@ -44,13 +78,13 @@ impl From<pythons::Error> for Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
-struct Synchronizer {
+pub struct Synchronizer {
     packaging: TempDir,
     lock: Lock,
 }
 
 impl Synchronizer {
-    fn new(lock: Lock) -> Result<Self> {
+    pub fn new(lock: Lock) -> Result<Self> {
         let tmp_dir = TempDir::new()?;
         vendors::Packaging::populate_to(tmp_dir.path())?;
         Ok(Self { packaging: tmp_dir, lock })
@@ -128,12 +162,14 @@ impl Synchronizer {
     // things in an undefined (implementation-defined) order. For best
     // compatibility, packages should be installed from leaf to root, so
     // that dependencies can be installed before their dependants.
-    fn required_packages(
+    fn required_packages<'a, I>(
         &self,
-        default: bool,
-        extras: Vec<String>,
         interpreter: &Interpreter,
-    ) -> Result<HashMap<String, PythonPackage>> {
+        default: bool,
+        extras: I,
+    ) -> Result<HashMap<String, PythonPackage>>
+        where I: Iterator<Item=&'a str>
+    {
         let dependencies = self.lock.dependencies();
         let mut deps = HashMap::new();
         if default {
@@ -147,24 +183,28 @@ impl Synchronizer {
             if let Some(s) = dependencies.extra(&extra) {
                 self.collect_required(s, &mut deps, interpreter)?;
             } else {
-                return Err(Error::ExtraSectionNotFound(extra));
+                return Err(Error::ExtraSectionNotFound(extra.to_string()));
             }
         }
         Ok(deps)
     }
 
-    fn install_into(
+    fn install_into<I, F>(
         &self,
-        project: &Project,
-        packages: &HashMap<String, PythonPackage>,
-    ) -> Result<()> {
-        let env = project.presumed_env_root()?;
-        let env = env.to_str().ok_or_else(|| {
-            Error::PathRepresentationError(env.to_path_buf())
+        prefix: &Path,
+        packages: I,
+        command: F,
+    ) -> Result<()>
+        where
+            I: Iterator<Item=(String, PythonPackage)>,
+            F: Fn() -> std::result::Result<Command, projects::Error>
+    {
+        let env = prefix.to_str().ok_or_else(|| {
+            Error::PathRepresentationError(prefix.to_path_buf())
         })?;
 
         let mut requirements = HashMap::new();
-        for (key, package) in packages.iter() {
+        for (key, package) in packages {
             let (hashed, requirement_txt) = package.to_requirement_txt();
             let mut f = NamedTempFile::new()?;
             writeln!(f, "{}", requirement_txt)?;
@@ -184,7 +224,7 @@ impl Synchronizer {
         let mut error_context = vec![];
 
         for (key, (_, hashed, requirement)) in requirements.into_iter() {
-            let mut cmd = project.command(None)?;
+            let mut cmd = command()?;
             cmd.args(&[
                 "-m", "pip", "install",
                 "--requirement", &requirement,
@@ -207,5 +247,24 @@ impl Synchronizer {
         } else {
             Err(Error::InstallCommandError(error_context))
         }
+    }
+
+    pub fn sync<'a, I>(
+        &self,
+        project: &Project,
+        default: bool,
+        extras: I,
+    ) -> Result<()>
+        where I: Iterator<Item=&'a str>
+    {
+        let interpreter = project.base_interpreter();
+        let packages = self.required_packages(interpreter, default, extras)?;
+        self.install_into(
+            &project.env_root()?,
+            packages.into_iter(),
+            || project.command(None),
+        )?;
+        // TODO: Remove packages not listed in lock.
+        Ok(())
     }
 }

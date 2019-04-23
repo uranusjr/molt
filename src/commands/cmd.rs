@@ -3,8 +3,7 @@ use std::{fmt, io};
 use clap::{App, AppSettings, Arg, SubCommand};
 use which::which;
 
-use crate::projects;
-use crate::pythons;
+use crate::{projects, pythons, sync};
 
 pub fn app<'a, 'b>() -> App<'a, 'b> {
     let py_available = which("py").is_ok();
@@ -32,6 +31,19 @@ pub fn app<'a, 'b>() -> App<'a, 'b> {
             .arg(Arg::with_name("project")
                 .help("Path to project root directory")
                 .required(true)
+            )
+        )
+        .subcommand(SubCommand::with_name("sync")
+            .about("Synchronize environment with locked project dependencies")
+            .arg(Arg::with_name("no_default")
+                .long("--no-default")
+                .help("Do no install the default section")
+                .requires("extras")
+            )
+            .arg(Arg::with_name("extras")
+                .long("--with")
+                .help("Extra sections to install")
+                .value_delimiter(",")
             )
         )
         .subcommand(SubCommand::with_name("run")
@@ -74,6 +86,7 @@ pub enum Error {
     ProjectError(projects::Error),
     SubCommandMissing,
     SubprocessExit(i32),
+    SyncError(sync::Error),
     SystemError(io::Error),
     UnrecognizedSubcommand(String),
 }
@@ -81,12 +94,22 @@ pub enum Error {
 impl Error {
     pub fn status(&self) -> i32 {
         match *self {
-            Error::InterpreterError(_) => 1,
-            Error::ProjectError(_) => 2,
-            Error::SubCommandMissing => 3,
+            // Bridged error from subprocess.
             Error::SubprocessExit(v) => v,
-            Error::SystemError(_) => 4,
-            Error::UnrecognizedSubcommand(_) => 5,
+
+            // General command errors.
+            Error::SyncError(_) => 1,
+
+            // Can't run without a project ._.
+            Error::ProjectError(_) => 0x10_00_00_01,
+
+            // Shouldn't happen unless there's a bug in Clap.
+            Error::SubCommandMissing => 0x60_00_00_01,
+            Error::UnrecognizedSubcommand(_) => 0x60_00_00_02,
+
+            // Something is very wrong in the user's runtime environment.
+            Error::InterpreterError(_) => 0x70_00_00_01,
+            Error::SystemError(_) => 0x70_00_00_02,
         }
     }
 }
@@ -100,6 +123,7 @@ impl fmt::Display for Error {
             Error::SubprocessExit(c) => {
                 write!(f, "process exited with status code {}", c)
             },
+            Error::SyncError(ref e) => e.fmt(f),
             Error::SystemError(ref e) => e.fmt(f),
             Error::UnrecognizedSubcommand(ref n) => {
                 write!(f, "unhandled subcommand {:?}", n)
@@ -123,6 +147,12 @@ impl From<projects::Error> for Error {
 impl From<pythons::Error> for Error {
     fn from(e: pythons::Error) -> Self {
         Error::InterpreterError(e)
+    }
+}
+
+impl From<sync::Error> for Error {
+    fn from(e: sync::Error) -> Self {
+        Error::SyncError(e)
     }
 }
 
