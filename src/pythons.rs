@@ -123,7 +123,7 @@ impl Interpreter {
         let code = format!(
             "import virtenv; virtenv.create(\
              python=None, env_dir={:?}, prompt={:?},\
-             system=False, bare=False)",
+             system=False, bare=True)",
             env_dir.to_str().ok_or_else(|| {
                 Error::PathRepresentationError(env_dir.to_owned())
             })?,
