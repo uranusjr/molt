@@ -232,7 +232,8 @@ impl Synchronizer {
                 "--no-deps",
             ]);
             cmd.env("PIP_DISABLE_PIP_VERSION_CHECK", "1");
-            cmd.env("PIP_NO_WARN_SCRIPT_LOCATION", "1");
+            cmd.env("PIP_NO_WARN_SCRIPT_LOCATION", "0");
+            cmd.env("PIP_REQUIRE_VIRTUALENV", "0");
             if hashed {
                 cmd.arg("--require-hashes");
             }
