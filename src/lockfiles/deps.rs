@@ -32,6 +32,11 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
+    #[cfg(test)]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn to_requirement_txt(&self) -> (bool, String) {
         let mut args = vec![];
 
