@@ -27,17 +27,21 @@ BLACKLIST_PATTERNS = [
 
 
 def _populate(root, requirements_txt):
+    env = os.environ.copy()
+    env.update({
+        "PIP_NO_COLOR": "false",
+        "PIP_NO_COMPILE": "false",
+        "PIP_PROGRESS_BAR": "off",
+        "PIP_REQUIRE_VIRTUALENV": "false",
+    })
     subprocess.check_call([
         sys.executable, "-m", "pip", "install",
         "--disable-pip-version-check",
         "--target", root,
         "--requirement", requirements_txt,
-        "--no-color",
-        "--no-compile",
         "--no-deps",
-        "--progress-bar=off",
         "--upgrade",
-    ], env={"PIP_REQUIRE_VIRTUALENV": "false"})
+    ], env=env)
     for entry in BLACKLIST_PATTERNS:
         for path in glob.glob(os.path.join(root, entry)):
             _remove(path)
