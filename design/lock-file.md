@@ -77,11 +77,11 @@ Each dependency entry may contain one or both of the following keys:
   discussion below for reasoning.)
 * *python*, if specified, is an object specifying a concrete package to
   install. This object must contain one key, *name* to specify the package, and
-  one of *version* or *url* to specify the version. An optional key *sources*
-  list one of more sources to find the package from. Each source key here
-  refers to an entry in the top-level `sources` section. If *sources* is left
-  out, the tool is free to decide how and where the package is fetched (e.g.
-  consulting [pip configurations]).
+  one of *version* or *url* to specify the version. An optional key *source*
+  may be used to specify where the package should be looked for. The value of
+  *source*, if a string, should be the key to an entry in the top-level
+  `sources` section. If *sources* is null or left out, the tool should decide
+  how and where the package is fetched (e.g. consulting [pip configurations]).
 
 [pip configurations]: https://pip.pypa.io/en/stable/user_guide/#config-file
 

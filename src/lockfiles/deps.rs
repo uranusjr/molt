@@ -27,7 +27,7 @@ pub enum PythonPackageSpecifier {
 pub struct PythonPackage {
     name: String,
     specifier: PythonPackageSpecifier,
-    sources: Option<Vec<Rc<Source>>>,
+    source: Option<Rc<Source>>,
     hashes: Option<Hashes>,
 }
 
@@ -51,18 +51,11 @@ impl PythonPackage {
             },
         });
 
-        if let Some(ref sources) = self.sources {
-            for (i, source) in sources.iter().enumerate() {
-                let arg = if i == 0 {
-                    "--index-url"
-                } else {
-                    "--extra-index-url"
-                };
-                args.push(format!("{}={}", arg, source.base_url()));
-                if source.no_verify_ssl() {
-                    if let Some(host) = source.base_url().host_str() {
-                        args.push(format!("--trusted-host={}", host));
-                    }
+        if let Some(ref source) = self.source {
+            args.push(format!("--index-url={}", source.base_url()));
+            if source.no_verify_ssl() {
+                if let Some(host) = source.base_url().host_str() {
+                    args.push(format!("--trusted-host={}", host));
                 }
             }
         }
@@ -81,38 +74,32 @@ impl PythonPackage {
 #[derive(Debug, Eq, PartialEq)]
 pub struct PythonPackageEntry {
     name: String,
+    source: Option<String>,
     specifier: PythonPackageSpecifier,
-    sources: Option<Vec<String>>,
 }
 
 impl PythonPackageEntry {
     fn into_python_package<E>(
         self,
-        all_sources: &Sources,
+        sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<PythonPackage, E>
         where E: de::Error
     {
-        let sources = match self.sources {
+        let source = match self.source {
             None => None,
-            Some(keys) => {
-                let mut objects = vec![];
-                for key in keys {
-                    if let Some(s) = all_sources.get(&key) {
-                        objects.push(s);
-                    } else {
-                        return Err(de::Error::custom(format!(
-                            "unresolvable source name {:?}", key,
-                        )));
-                    }
-                }
-                Some(objects)
+            Some(ref k) => match sources.get(k) {
+                Some(s) => Some(s),
+                None => {
+                    let s = format!("unresolvable source name {:?}", k);
+                    return Err(de::Error::custom(s));
+                },
             },
         };
         Ok(PythonPackage {
             name: self.name,
             specifier: self.specifier,
-            sources,
+            source,
             hashes,
         })
     }
@@ -124,7 +111,7 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
     {
         #[derive(Deserialize)]
         #[serde(field_identifier, rename_all = "snake_case")]
-        enum Field { Name, Sources, Version, Url }
+        enum Field { Name, Source, Version, Url }
 
         struct PythonPackageEntryVisitor;
 
@@ -140,7 +127,7 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
             {
                 let mut name: Option<String> = None;
                 let mut specifier: Option<PythonPackageSpecifier> = None;
-                let mut sources: Option<Vec<String>> = None;
+                let mut source: Option<String> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Name => {
@@ -149,13 +136,13 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
                             }
                             name = Some(map.next_value()?);
                         },
-                        Field::Sources => {
-                            if sources.is_some() {
+                        Field::Source => {
+                            if source.is_some() {
                                 return Err(de::Error::duplicate_field(
-                                    "sources",
+                                    "source",
                                 ));
                             }
-                            sources = Some(map.next_value()?);
+                            source = Some(map.next_value()?);
                         },
                         Field::Version => {
                             match specifier {
@@ -208,7 +195,7 @@ impl<'de> Deserialize<'de> for PythonPackageEntry {
                 let specifier = specifier.ok_or_else(|| {
                     de::Error::missing_field("`version` or `url`")
                 })?;
-                Ok(PythonPackageEntry { name, specifier, sources })
+                Ok(PythonPackageEntry { name, specifier, source })
             }
         }
         deserializer.deserialize_map(PythonPackageEntryVisitor)
@@ -381,7 +368,7 @@ mod tests {
         static JSON: &str = r#"{
             "name": "certifi",
             "version": "2017.7.27.1",
-            "sources": ["default"]
+            "source": "default"
         }"#;
 
         let entry: PythonPackageEntry = from_str(JSON).unwrap();
@@ -390,7 +377,7 @@ mod tests {
             specifier: PythonPackageSpecifier::Version(
                 String::from("2017.7.27.1"),
             ),
-            sources: Some(vec![String::from("default")]),
+            source: Some(String::from("default")),
         });
     }
 
@@ -407,7 +394,7 @@ mod tests {
             specifier: PythonPackageSpecifier::Version(
                 String::from("2017.7.27.1"),
             ),
-            sources: None,
+            source: None,
         });
     }
 
@@ -451,7 +438,7 @@ mod tests {
         assert_eq!(entry.python, Some(PythonPackageEntry {
             name: String::from("foo"),
             specifier: PythonPackageSpecifier::Version(String::from("2.18.4")),
-            sources: None,
+            source: None,
         }));
     }
 
