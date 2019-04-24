@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::cell::Ref;
 use std::collections::HashMap;
 use std::fmt;

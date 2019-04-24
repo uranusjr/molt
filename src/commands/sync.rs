@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_variables)]
-
 use clap::{ArgMatches, Values};
 
 use crate::projects::Project;
