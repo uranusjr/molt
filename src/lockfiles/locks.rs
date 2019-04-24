@@ -17,7 +17,9 @@ use super::{
 };
 
 pub struct Lock {
+    #[allow(dead_code)]
     sources: Sources,
+
     dependencies: Dependencies,
 }
 
@@ -26,6 +28,7 @@ impl<'a> Lock {
         Self { sources, dependencies }
     }
 
+    #[cfg(test)]
     pub fn sources(&self) -> &Sources {
         &self.sources
     }

@@ -288,17 +288,14 @@ pub struct Dependency {
 }
 
 impl Dependency {
-    #[cfg(test)]
     pub fn key(&self) -> &str {
         &self.key
     }
 
-    #[cfg(test)]
     pub fn python(&self) -> Option<&PythonPackage> {
         self.python.as_ref()
     }
 
-    #[cfg(test)]
     pub fn dependencies(&self) -> IterPackageDependency {
         IterPackageDependency(self.dependencies.iter())
     }
@@ -356,7 +353,7 @@ impl Dependencies {
         self.0.get(&format!("[{}]", extra)).map(|r| r.borrow())
     }
 
-    #[cfg(test)]
+    #[allow(dead_code)]
     pub fn iter(&self) -> IterDependency {
         IterDependency(self.0.iter())
     }

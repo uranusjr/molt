@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::lockfiles::{
     Dependencies,
-    Hash,
     Hashes,
     Lock,
     PythonPackage,
@@ -66,7 +65,7 @@ fn convert_python_packages(
 }
 
 #[derive(Debug, Deserialize)]
-struct PipfileLock {
+pub struct PipfileLock {
     default: HashMap<String, Package>,
     develop: HashMap<String, Package>,
 
@@ -76,6 +75,7 @@ struct PipfileLock {
 }
 
 impl PipfileLock {
+    #[allow(dead_code)]
     pub fn into_lock(self) -> Lock {
         let sources = convert_sources(self.meta.sources);
 
@@ -113,6 +113,7 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
     use serde_json::from_str;
+    use crate::lockfiles::Hash;
 
     impl Package {
         fn new<'a, I>(version: &str, hash_values: I) -> Self
