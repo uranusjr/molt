@@ -20,6 +20,11 @@ impl Hash {
     fn new(name: &str, value: &str) -> Self {
         Self { name: name.to_string(), value: value.to_string() }
     }
+
+    pub fn parse(v: &str) -> Option<Self> {
+        let mut it = v.split(':');
+        Some(Hash::new(it.next()?, it.next()?))
+    }
 }
 
 impl fmt::Display for Hash {
@@ -44,24 +49,29 @@ impl<'de> Deserialize<'de> for Hash {
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
                 where E: de::Error
             {
-                let mut it = v.split(':');
-                let name = it.next().unwrap();
-                match it.next() {
-                    Some(v) => Ok(Hash::new(name, v)),
-                    None => Err(de::Error::invalid_value(
+                Hash::parse(v).ok_or_else(|| {
+                    de::Error::invalid_value(
                         Unexpected::Str(v), &"<name>:<value>",
-                    )),
-                }
+                    )
+                })
             }
         }
         deserializer.deserialize_str(HashVisitor)
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Hashes(HashSet<Hash>);
 
 impl Hashes {
+    pub fn new() -> Self {
+        Self(HashSet::new())
+    }
+
+    pub fn add(&mut self, hash: Hash) -> bool {
+        self.0.insert(hash)
+    }
+
     pub fn iter(&self) -> hash_set::Iter<Hash> {
         self.0.iter()
     }

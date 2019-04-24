@@ -1,5 +1,5 @@
 use std::cell::{Ref, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map};
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 use std::slice::Iter;
@@ -32,6 +32,15 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
+    pub fn new(
+        name: &str,
+        specifier: PythonPackageSpecifier,
+        source: Option<Rc<Source>>,
+        hashes: Option<Hashes>,
+    ) -> Self {
+        Self { name: name.to_string(), specifier, source, hashes }
+    }
+
     #[cfg(test)]
     pub fn name(&self) -> &str {
         &self.name
@@ -79,8 +88,8 @@ pub struct PythonPackageEntry {
 }
 
 impl PythonPackageEntry {
-    fn into_python_package<E>(
-        self,
+    fn make_python_package<E>(
+        &self,
         sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<PythonPackage, E>
@@ -97,8 +106,8 @@ impl PythonPackageEntry {
             },
         };
         Ok(PythonPackage {
-            name: self.name,
-            specifier: self.specifier,
+            name: self.name.clone(),
+            specifier: self.specifier.clone(),
             source,
             hashes,
         })
@@ -256,22 +265,18 @@ impl<'de> Deserialize<'de> for Marker {
     }
 }
 
-type DependencyRef = Rc<RefCell<Dependency>>;
+type DependencyCell = Rc<RefCell<Dependency>>;
 
-pub struct IterDependency<'a>(Iter<'a, (DependencyRef, Option<Marker>)>);
+type DependencyRef<'a> = Ref<'a, Dependency>;
 
-impl<'a> Iterator for IterDependency<'a> {
-    type Item = (Ref<'a, Dependency>, Option<&'a Marker>);
+pub struct IterPackageDependency<'a>(
+    Iter<'a, (DependencyCell, Option<Marker>)>,
+);
+
+impl<'a> Iterator for IterPackageDependency<'a> {
+    type Item = (DependencyRef<'a>, Option<&'a Marker>);
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(d, m)| (d.borrow(), m.as_ref()))
-    }
-}
-
-pub struct Dependencies<'a>(&'a Vec<(DependencyRef, Option<Marker>)>);
-
-impl<'a> Dependencies<'a> {
-    pub fn iter(&self) -> IterDependency {
-        IterDependency(self.0.iter())
     }
 }
 
@@ -279,45 +284,23 @@ impl<'a> Dependencies<'a> {
 pub struct Dependency {
     key: String,
     python: Option<PythonPackage>,
-    dependencies: Vec<(DependencyRef, Option<Marker>)>,
+    dependencies: Vec<(DependencyCell, Option<Marker>)>,
 }
 
 impl Dependency {
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn key(&self) -> &str {
         &self.key
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn python(&self) -> Option<&PythonPackage> {
         self.python.as_ref()
     }
 
-    #[allow(dead_code)]
-    pub fn dependencies(&self) -> Dependencies {
-        Dependencies(&self.dependencies)
-    }
-
-    pub(crate) fn populate_dependencies<E>(
-        &mut self,
-        refs: HashMap<String, Option<Marker>>,
-        from: &HashMap<String, Rc<RefCell<Dependency>>>,
-    ) -> Result<(), E>
-        where E: de::Error
-    {
-        for (key, marker) in refs.into_iter() {
-            match from.get(&key) {
-                Some(dep) => {
-                    self.dependencies.push((dep.clone(), marker));
-                },
-                None => {
-                    return Err(de::Error::custom(format!(
-                        "unresolvable dependency key {:?}", key,
-                    )));
-                },
-            }
-        }
-        Ok(())
+    #[cfg(test)]
+    pub fn dependencies(&self) -> IterPackageDependency {
+        IterPackageDependency(self.dependencies.iter())
     }
 }
 
@@ -330,23 +313,80 @@ pub(super) struct DependencyEntry {
 }
 
 impl DependencyEntry {
-    pub(crate) fn into_unlinked_dependency<E>(
-        self,
-        key: String,
+    pub fn make_python<E>(
+        &self,
         sources: &Sources,
         hashes: Option<Hashes>,
-    ) -> Result<(Dependency, HashMap<String, Option<Marker>>), E>
+    ) -> Result<Option<PythonPackage>, E>
         where E: de::Error
     {
-        let python = match self.python {
-            None => None,
-            Some(p) => match p.into_python_package(sources, hashes) {
-                Ok(p) => Some(p),
-                Err(e) => { return Err(e); },
-            },
+        match self.python {
+            None => Ok(None),
+            Some(ref p) => Ok(Some(p.make_python_package(sources, hashes)?)),
+        }
+    }
+
+    pub fn into_dependencies(self) -> HashMap<String, Option<Marker>> {
+        self.dependencies
+    }
+}
+
+pub struct IterDependency<'a>(hash_map::Iter<'a, String, DependencyCell>);
+
+impl<'a> Iterator for IterDependency<'a> {
+    type Item = (&'a str, DependencyRef<'a>);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, v)| (k.as_str(), v.borrow()))
+    }
+}
+
+#[derive(Default)]
+pub struct Dependencies(HashMap<String, DependencyCell>);
+
+impl Dependencies {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn default(&self) -> Option<Ref<Dependency>> {
+        self.0.get("").map(|r| r.borrow())
+    }
+
+    pub fn extra(&self, extra: &str) -> Option<Ref<Dependency>> {
+        self.0.get(&format!("[{}]", extra)).map(|r| r.borrow())
+    }
+
+    #[cfg(test)]
+    pub fn iter(&self) -> IterDependency {
+        IterDependency(self.0.iter())
+    }
+
+    pub fn add_dependency(
+        &mut self,
+        key: &str,
+        python: Option<PythonPackage>,
+    ) -> Option<DependencyCell> {
+        let dep = Dependency {
+            key: key.to_string(),
+            python,
+            dependencies: vec![],
         };
-        let dep = Dependency { key, python, dependencies: vec![] };
-        Ok((dep, self.dependencies))
+        self.0.insert(key.to_string(), Rc::new(RefCell::new(dep)))
+    }
+
+    pub fn add_dependence(
+        &mut self,
+        dependent: &str,
+        depended: &str,
+        marker: Option<Marker>,
+    ) -> Result<(), String> {
+        let depended = self.0.get(depended).ok_or_else(|| {
+            depended.to_string()
+        })?.clone();
+        let mut dependent = self.0.get_mut(dependent).ok_or_else(|| {
+            dependent.to_string()
+        })?.borrow_mut();
+        Ok(dependent.dependencies.push((depended, marker)))
     }
 }
 

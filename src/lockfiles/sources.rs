@@ -93,8 +93,30 @@ impl<'de> Deserialize<'de> for SourceEntry {
 pub struct Sources(HashMap<String, Rc<Source>>);
 
 impl Sources {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn get(&self, key: &str) -> Option<Rc<Source>> {
         self.0.get(key).map(Clone::clone)
+    }
+
+    pub fn add<S>(
+        &mut self,
+        key: S,
+        base_url: Url,
+        no_verify_ssl: bool,
+    ) -> Option<Rc<Source>>
+        where S: Into<String>
+    {
+        let key = key.into();
+        let source = Source { name: key.to_string(), base_url, no_verify_ssl };
+        self.0.insert(key, Rc::new(source))
     }
 }
 

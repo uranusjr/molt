@@ -11,10 +11,12 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate unindent;
 extern crate url;
+extern crate url_serde;
 extern crate which;
 
 mod commands;
 mod entrypoints;
+mod foreign;
 mod lockfiles;
 mod projects;
 mod pythons;

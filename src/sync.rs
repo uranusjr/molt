@@ -145,7 +145,7 @@ impl Synchronizer {
         if let Some(python) = current.python() {
             into.insert(current.key().to_string(), python.clone());
         }
-        for (child, marker) in current.dependencies().iter() {
+        for (child, marker) in current.dependencies() {
             if let Some(m) = marker {
                 if !self.evaluate_marker(m, interpreter)? {
                     continue;

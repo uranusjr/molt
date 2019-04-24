@@ -1,7 +1,5 @@
-use std::cell::{Ref, RefCell};
-use std::collections::{HashMap, hash_map};
+use std::collections::HashMap;
 use std::fmt::{self, Formatter};
-use std::rc::Rc;
 
 use serde::de::{
     self,
@@ -12,48 +10,26 @@ use serde::de::{
 };
 
 use super::{
-    Dependency,
+    Dependencies,
     DependencyEntry,
     Hashes,
     Sources,
 };
 
-type DependencyRef = Rc<RefCell<Dependency>>;
-
-pub struct IterDependency<'a>(hash_map::Iter<'a, String, DependencyRef>);
-
-impl<'a> Iterator for IterDependency<'a> {
-    type Item = (&'a str, Ref<'a, Dependency>);
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, v)| (k.as_str(), v.borrow()))
-    }
-}
-
-#[derive(Default)]
-pub struct Dependencies(HashMap<String, DependencyRef>);
-
-impl Dependencies {
-    pub fn default(&self) -> Option<Ref<Dependency>> {
-        self.0.get("").map(|r| r.borrow())
-    }
-
-    pub fn extra(&self, extra: &str) -> Option<Ref<Dependency>> {
-        self.0.get(&format!("[{}]", extra)).map(|r| r.borrow())
-    }
-
-    #[allow(dead_code)]
-    pub fn iter(&self) -> IterDependency {
-        IterDependency(self.0.iter())
-    }
-}
-
-#[allow(dead_code)]
 pub struct Lock {
     sources: Sources,
     dependencies: Dependencies,
 }
 
 impl<'a> Lock {
+    pub fn from(sources: Sources, dependencies: Dependencies) -> Self {
+        Self { sources, dependencies }
+    }
+
+    pub fn sources(&self) -> &Sources {
+        &self.sources
+    }
+
     pub fn dependencies(&self) -> &Dependencies {
         &self.dependencies
     }
@@ -113,37 +89,32 @@ impl<'de> Deserialize<'de> for Lock {
                 }
 
                 let sources = sources.unwrap_or_default();
+                let dents = dents.unwrap_or_default();
                 let mut hashes = hashes.unwrap_or_default();
 
                 // Convert the dependencies into semi-concrete objects, with
                 // hashes injected and sources resolved, but edges are not
                 // connected at this point.
-                let mut deps = HashMap::new();
-                let mut links = HashMap::new();
-                for (k, v) in dents.unwrap_or_default().into_iter() {
-                    let hash = hashes.remove(&k);
-                    let dp = v.into_unlinked_dependency(
-                        k.to_string(), &sources, hash,
-                    );
-                    let (dep, link) = match dp {
-                        Ok(d) => d,
-                        Err(e) => { return Err(e); },
-                    };
-                    deps.insert(
-                        k.to_string(),
-                        Rc::new(RefCell::new(dep)));
-                    links.insert(k, link);
+                let mut dependencies = Dependencies::new();
+                let mut links = vec![];
+                for (k, v) in dents.into_iter() {
+                    let python = v.make_python(&sources, hashes.remove(&k))?;
+                    dependencies.add_dependency(&k, python);
+                    links.push((k, v.into_dependencies()));
                 }
 
                 // Connect the edges.
-                for (k, v) in deps.iter().map(|(k, v)| (k, v.clone())) {
-                    v.borrow_mut().populate_dependencies(
-                        links.remove(k).expect("missing link??"),
-                        &deps,
-                    )?;
+                for (p, links) in links.into_iter() {
+                    for (c, m) in links.into_iter() {
+                        let result = dependencies.add_dependence(&p, &c, m);
+                        if let Err(k) = result {
+                            return Err(de::Error::custom(format!(
+                                "unresolvable dependency name {:?}", k,
+                            )));
+                        }
+                    }
                 }
 
-                let dependencies = Dependencies(deps);
                 Ok(Lock { sources, dependencies })
             }
         }
@@ -186,7 +157,7 @@ mod tests {
         assert_eq!(deps[0].1.python().unwrap().name(), "Bar");
 
         // The `bar` entry has two dependencies, one with markers.
-        let bar_deps: HashSet<_> = deps[0].1.dependencies().iter()
+        let bar_deps: HashSet<_> = deps[0].1.dependencies()
             .map(|(d, m)| (d.key().to_string(), m.is_some()))
             .collect();
         assert_eq!(bar_deps, [
