@@ -88,7 +88,7 @@ TODO.
 
 ## Lock file
 
-See <design/lock-file.md>.
+See [design/lock-file.md](./design/lock-file.md).
 
 
 ## Interoperability
