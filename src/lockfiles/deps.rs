@@ -377,13 +377,14 @@ impl Dependencies {
         depended: &str,
         marker: Option<Marker>,
     ) -> Result<(), String> {
-        let depended = self.0.get(depended).ok_or_else(|| {
-            depended.to_string()
-        })?.clone();
-        let mut dependent = self.0.get_mut(dependent).ok_or_else(|| {
-            dependent.to_string()
-        })?.borrow_mut();
-        Ok(dependent.dependencies.push((depended, marker)))
+        let depended = self.0.get(depended)
+            .ok_or_else(|| depended.to_string())?
+            .clone();
+        let mut dependent = self.0.get(dependent)
+            .ok_or_else(|| dependent.to_string())?
+            .borrow_mut();  // TODO: Return an error if this borrow fails?
+        dependent.dependencies.push((depended, marker));
+        Ok(())
     }
 }
 
