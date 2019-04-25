@@ -110,12 +110,11 @@ tool to generate a new lock file.
 
 ## Try it out
 
-Again, work in progress, so don’t judge (contributions are welcomed).
-
-Requires Cargo and a modern Python.
+Requires Cargo, and a Python interpreter with `pip` available. The Python
+interpreter should be either available in PATH, discoverable by `py`, or set in
+the environment variable `MOLT_BUILD_PYTHON`.
 
 ```
-python assets/vendor.py
 cargo build --release
 ```
 
