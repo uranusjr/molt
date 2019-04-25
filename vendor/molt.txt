@@ -1,0 +1,4 @@
+cerberus==1.2
+plette==0.2.2
+six==1.12.0
+tomlkit==0.5.3

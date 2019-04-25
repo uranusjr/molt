@@ -1,5 +1,6 @@
 /target
 
+/.tox
 *.py[co]
 __pycache__/
 

@@ -20,19 +20,16 @@
                             ]
                         },
                         "dependencies": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "patternProperties": {
-                                    "^(?P<dependencyKey>.+)": {
-                                        "oneOf": [
-                                            {"type": "null"},
-                                            {
-                                                "type": "array",
-                                                "items": {"type": "string"}
-                                            }
-                                        ]
-                                    }
+                            "type": "object",
+                            "patternProperties": {
+                                "^(?P<dependencyKey>.+)": {
+                                    "oneOf": [
+                                        {"type": "null"},
+                                        {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        }
+                                    ]
                                 }
                             }
                         }

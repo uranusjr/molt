@@ -119,3 +119,18 @@ cargo build --release
 ```
 
 This gives you a binary in `target/release`. Copy it somewhere in your PATH.
+
+
+## Run tests
+
+Rust tests:
+
+```
+cargo test
+```
+
+Python tests:
+
+```
+tox
+```
