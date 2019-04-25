@@ -84,6 +84,14 @@ class Dependency(plette.models.DataView):
         "dependencies": {"type": "dict"},
     }
 
+    @classmethod
+    def validate(cls, data):
+        super(Dependency, cls).validate(data)
+        if "python" in data:
+            PythonPackage.validate(data["python"])
+        if "dependencies" in data:
+            DependencyDependencies.validate(data["dependencies"])
+
 
 class Dependencies(plette.models.DataViewMapping):
     item_class = Dependency
