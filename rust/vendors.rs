@@ -22,7 +22,7 @@ macro_rules! populate {
 }
 
 #[derive(RustEmbed)]
-#[folder = "assets/virtenv"]
+#[folder = "target/assets/virtenv"]
 pub struct VirtEnv;
 
 impl VirtEnv {
@@ -32,7 +32,7 @@ impl VirtEnv {
 }
 
 #[derive(RustEmbed)]
-#[folder = "assets/pep425"]
+#[folder = "target/assets/pep425"]
 pub struct Pep425;
 
 impl Pep425 {
@@ -42,7 +42,7 @@ impl Pep425 {
 }
 
 #[derive(RustEmbed)]
-#[folder = "assets/packaging"]
+#[folder = "target/assets/packaging"]
 pub struct Packaging;
 
 impl Packaging {

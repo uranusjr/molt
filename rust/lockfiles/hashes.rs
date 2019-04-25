@@ -64,16 +64,6 @@ impl<'de> Deserialize<'de> for Hash {
 pub struct Hashes(HashSet<Hash>);
 
 impl Hashes {
-    #[cfg(test)]
-    pub fn new() -> Self {
-        Self(HashSet::new())
-    }
-
-    #[cfg(test)]
-    pub fn add(&mut self, hash: Hash) -> bool {
-        self.0.insert(hash)
-    }
-
     pub fn iter(&self) -> hash_set::Iter<Hash> {
         self.0.iter()
     }

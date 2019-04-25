@@ -17,18 +17,12 @@ use super::{
 };
 
 pub struct Lock {
-    #[allow(dead_code)]
     sources: Sources,
-
     dependencies: Dependencies,
 }
 
 impl<'a> Lock {
-    pub fn from(sources: Sources, dependencies: Dependencies) -> Self {
-        Self { sources, dependencies }
-    }
-
-    #[cfg(test)]
+    #[allow(dead_code)]
     pub fn sources(&self) -> &Sources {
         &self.sources
     }

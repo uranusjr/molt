@@ -2,6 +2,11 @@
 name = "molt"
 version = "0.1.0"
 authors = ["Tzu-ping Chung <uranusjr@gmail.com>"]
+build = "build.rs"
+
+[[bin]]
+name = "molt"
+path = "rust/main.rs"
 
 [dependencies]
 clap = "2.33"

@@ -93,19 +93,11 @@ impl<'de> Deserialize<'de> for SourceEntry {
 pub struct Sources(HashMap<String, Rc<Source>>);
 
 impl Sources {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    #[cfg(test)]
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
     pub fn get(&self, key: &str) -> Option<Rc<Source>> {
         self.0.get(key).map(Clone::clone)
     }
 
+    #[allow(dead_code)]
     pub fn add<S>(
         &mut self,
         key: S,

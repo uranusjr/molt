@@ -32,15 +32,6 @@ pub struct PythonPackage {
 }
 
 impl PythonPackage {
-    pub fn new(
-        name: &str,
-        specifier: PythonPackageSpecifier,
-        source: Option<Rc<Source>>,
-        hashes: Option<Hashes>,
-    ) -> Self {
-        Self { name: name.to_string(), specifier, source, hashes }
-    }
-
     #[cfg(test)]
     pub fn name(&self) -> &str {
         &self.name

@@ -9,12 +9,12 @@ enum DependedFile<'a> {
     Script(&'a str),
 }
 
-static VENDOR_PY: &str = "vendor.py";
+static VENDOR_SCRIPT: &str = "__main__.py";
 
 fn find_depended_file(p: &Path) -> Option<DependedFile> {
     // The vendor script.
-    if p.file_name()? == VENDOR_PY {
-        return Some(DependedFile::Script(VENDOR_PY));
+    if p.file_name()? == VENDOR_SCRIPT {
+        return Some(DependedFile::Script(VENDOR_SCRIPT));
     }
 
     // Requirements files.
@@ -48,10 +48,10 @@ fn python_command() -> Command {
 
 fn main() {
     let root = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let assets_dir = Path::new(&root).join("assets");
+    let assets_dir = Path::new(&root).join("vendor");
 
-    for entry in assets_dir.read_dir().expect("cannot read assets dir") {
-        let entry = entry.expect("cannot read assets dir entry");
+    for entry in assets_dir.read_dir().expect("cannot read vendor dir") {
+        let entry = entry.expect("cannot read vendor dir entry");
         let path = entry.path();
         if let Some(_) = find_depended_file(&path) {
             if let Some(s) = path.to_str() {
@@ -61,7 +61,7 @@ fn main() {
     }
 
     let s = python_command()
-        .arg(assets_dir.join(VENDOR_PY).to_str().unwrap())
+        .arg(assets_dir.to_str().unwrap())
         .status()
         .expect("failed to execute vendor script");
     std::process::exit(s.code().unwrap_or(-1));

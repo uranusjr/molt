@@ -61,19 +61,20 @@ def _populate_pep425(root):
 
 
 def main():
-    assets_root = os.path.dirname(__file__)
-    pattern = glob.glob(os.path.join(assets_root, "requirements-*.txt"))
-    for requirements_txt in pattern:
+    target_root = os.path.abspath(
+        os.path.join(__file__, "..", "..", "target", "assets"),
+    )
+
+    pattern = os.path.join(os.path.dirname(__file__), "*.txt")
+    for requirements_txt in glob.glob(pattern):
         if not os.path.isfile(requirements_txt):
             continue
-        child_name = os.path.splitext(
-            os.path.basename(requirements_txt),
-        )[0].split("-", 1)[1]
-        p = os.path.join(assets_root, child_name)
+        child_name = os.path.splitext(os.path.basename(requirements_txt))[0]
+        p = os.path.join(target_root, child_name)
         if not os.path.exists(p):
             os.makedirs(p)
         _populate(p, requirements_txt)
-    _populate_pep425(os.path.join(assets_root, "pep425"))
+    _populate_pep425(os.path.join(target_root, "pep425"))
 
 
 if __name__ == '__main__':
