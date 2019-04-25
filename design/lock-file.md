@@ -39,10 +39,9 @@ There are three top-level fields:
 * *hashes* is a mapping of hashes used to check the integrity of downloaded
   packages.
 
-Implementers can store their tool-specific data in top-level fields prefixed
-with an underscore (`_`). To avoid conflicts, each tool should only use one
-top-level field named after the tool. For example, Molt stores its data in a
-top-level field named `_molt`.
+Implementers can store their tool-specific data in fields prefixed with an
+underscore (`_`). To avoid conflicts, each tool should only use one field name.
+For example, Molt stores its data in a fields named `_molt`.
 
 #### `sources`
 

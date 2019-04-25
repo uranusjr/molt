@@ -48,8 +48,13 @@ fn python_command() -> Command {
 
 fn main() {
     let root = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let assets_dir = Path::new(&root).join("vendor");
+    let root = Path::new(&root);
 
+    if let Some(s) = root.join("target").to_str() {
+        println!("cargo:rereun-if-changed={}", s);
+    }
+
+    let assets_dir = root.join("vendor");
     for entry in assets_dir.read_dir().expect("cannot read vendor dir") {
         let entry = entry.expect("cannot read vendor dir entry");
         let path = entry.path();

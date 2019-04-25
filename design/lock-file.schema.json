@@ -60,6 +60,5 @@
                 }
             }
         }
-    },
-    "patternProperties": {"^_(?P<tool>.+)$": {}}
+    }
 }

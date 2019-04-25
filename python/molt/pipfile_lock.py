@@ -1,1 +1,2 @@
-import plette
+def to_lock(pfl):
+    pass
