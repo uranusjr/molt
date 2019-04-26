@@ -193,4 +193,17 @@ impl Interpreter {
         let name = String::from_utf8(out.stdout).unwrap();
         Ok(env_dir.join("lib").join(&name).join("site-packages"))
     }
+
+    pub fn run_molt_helper(&self, code: &str) -> Result<Option<i32>> {
+        let tmp_dir = TempDir::new()?;
+        vendors::Molt::populate_to(tmp_dir.path())?;
+
+        let retcode = self.interpret(
+            Some("utf-8"),
+            code,
+            tmp_dir.path(),
+            empty::<&str>(),
+        )?.status()?.code();
+        Ok(retcode)
+    }
 }

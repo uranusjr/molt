@@ -132,11 +132,10 @@ impl<'de> Deserialize<'de> for Sources {
                     Some(h) => HashMap::with_capacity(h),
                     None => HashMap::new(),
                 };
-                while let Some(k) = map.next_key()? {
-                    let k: &str = k;
+                while let Some(k) = map.next_key::<String>()? {
                     let v: SourceEntry = map.next_value()?;
-                    let source = v.into_source(k.to_string());
-                    sources.insert(k.to_string(), Rc::new(source));
+                    let source = v.into_source(k.clone());
+                    sources.insert(k, Rc::new(source));
                 }
                 Ok(Sources(sources))
             }

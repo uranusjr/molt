@@ -18,6 +18,7 @@ def _remove(p):
 
 
 BLACKLIST_PATTERNS = [
+    "__pycache__/",
     "bin/",
     "Scripts/",
     "*.dist-info/",
@@ -47,6 +48,12 @@ def _populate(root, requirements_txt):
             _remove(path)
 
 
+def _populate_molt(src, root):
+    if not os.path.exists(root):
+        os.makedirs(root)
+    shutil.copytree(os.path.join(src, "molt"), os.path.join(root, "molt"))
+
+
 def _populate_pep425(root):
     if not os.path.exists(root):
         os.makedirs(root)
@@ -61,9 +68,8 @@ def _populate_pep425(root):
 
 
 def main():
-    target_root = os.path.abspath(
-        os.path.join(__file__, "..", "..", "target", "assets"),
-    )
+    project_root = os.path.abspath(os.path.join(__file__, "..", ".."))
+    target_root = os.path.join(project_root, "target", "assets")
 
     pattern = os.path.join(os.path.dirname(__file__), "*.txt")
     for requirements_txt in glob.glob(pattern):
@@ -74,6 +80,10 @@ def main():
         if not os.path.exists(p):
             os.makedirs(p)
         _populate(p, requirements_txt)
+    _populate_molt(
+        os.path.join(project_root, "python"),
+        os.path.join(target_root, "molt"),
+    )
     _populate_pep425(os.path.join(target_root, "pep425"))
 
 

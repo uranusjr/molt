@@ -68,6 +68,9 @@ pub fn app<'a, 'b>() -> App<'a, 'b> {
                 .multiple(true)
             )
         )
+        .subcommand(SubCommand::with_name("convert")
+            .about("Convert a foreign lock file format to molt.lock.json")
+        )
         .subcommand(SubCommand::with_name("pip-install")
             .about("Secret subcommand to install things into the environment")
             .setting(AppSettings::AllowLeadingHyphen)
@@ -82,6 +85,7 @@ pub fn app<'a, 'b>() -> App<'a, 'b> {
 
 #[derive(Debug)]
 pub enum Error {
+    ConvertError(i32),
     InterpreterError(pythons::Error),
     ProjectError(projects::Error),
     SubCommandMissing,
@@ -98,7 +102,8 @@ impl Error {
             Error::SubprocessExit(v) => v,
 
             // General command errors.
-            Error::SyncError(_) => 1,
+            Error::ConvertError(_) => 1,
+            Error::SyncError(_) => 2,
 
             // Can't run without a project ._.
             Error::ProjectError(_) => 0x10_00_00_01,
@@ -117,6 +122,9 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Error::ConvertError(c) => {
+                write!(f, "conversion failed with error {}", c)
+            },
             Error::InterpreterError(ref e) => e.fmt(f),
             Error::ProjectError(ref e) => e.fmt(f),
             Error::SubCommandMissing => write!(f, "missing subcommand"),

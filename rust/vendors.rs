@@ -22,14 +22,25 @@ macro_rules! populate {
 }
 
 #[derive(RustEmbed)]
-#[folder = "target/assets/virtenv"]
-pub struct VirtEnv;
+#[folder = "target/assets/molt"]
+pub struct Molt;
 
-impl VirtEnv {
+impl Molt {
     pub fn populate_to(dir: &Path) -> Result<()> {
         populate!(Self, dir)
     }
 }
+
+#[derive(RustEmbed)]
+#[folder = "target/assets/packaging"]
+pub struct Packaging;
+
+impl Packaging {
+    pub fn populate_to(dir: &Path) -> Result<()> {
+        populate!(Self, dir)
+    }
+}
+
 
 #[derive(RustEmbed)]
 #[folder = "target/assets/pep425"]
@@ -42,10 +53,10 @@ impl Pep425 {
 }
 
 #[derive(RustEmbed)]
-#[folder = "target/assets/packaging"]
-pub struct Packaging;
+#[folder = "target/assets/virtenv"]
+pub struct VirtEnv;
 
-impl Packaging {
+impl VirtEnv {
     pub fn populate_to(dir: &Path) -> Result<()> {
         populate!(Self, dir)
     }

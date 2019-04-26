@@ -1,4 +1,5 @@
 mod cmd;
+mod convert;
 mod init;
 mod pip_install;
 mod py;
@@ -35,6 +36,7 @@ fn discover_interpreter<'a>(matches: &'a ArgMatches) -> Result<Interpreter> {
 pub fn dispatch() -> Result<()> {
     let matches = cmd::app().get_matches();
     match matches.subcommand_name() {
+        Some("convert") => subcommand!(matches, convert),
         Some("init") => subcommand!(matches, init),
         Some("py") => subcommand!(matches, py),
         Some("run") => subcommand!(matches, run),

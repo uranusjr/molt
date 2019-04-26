@@ -21,6 +21,7 @@ pub enum Error {
     EnvironmentSetupError(env::JoinPathsError),
     LockFileNotFoundError(PathBuf),
     LockFileInvalidError(serde_json::Error),
+    ProjectFileNotFoundError(PathBuf),
     ProjectNotFoundError(PathBuf),
     PythonInterpreterError(pythons::Error),
     SystemEnvironmentError(io::Error),
@@ -40,6 +41,9 @@ impl fmt::Display for Error {
                 write!(f, "lock file expected but not found at {:?}", p)
             },
             Error::LockFileInvalidError(ref e) => e.fmt(f),
+            Error::ProjectFileNotFoundError(ref p) => {
+                write!(f, "required project file not found at {:?}", p)
+            },
             Error::ProjectNotFoundError(ref p) => {
                 write!(f, "project not found in {:?}", p)
             },
@@ -75,6 +79,9 @@ impl From<pythons::Error> for Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
+pub enum ForeignFile {
+    PipfileLock(PathBuf),
+}
 
 pub struct Project {
     interpreter: Interpreter,
@@ -109,8 +116,17 @@ impl Project {
         &self.interpreter
     }
 
-    fn persumed_lock_file_path(&self) -> PathBuf {
+    pub fn persumed_lock_file_path(&self) -> PathBuf {
         self.root.join("molt.lock.json")
+    }
+
+    pub fn foreign_lock_file_path(&self) -> Result<ForeignFile> {
+        let p = self.root.join("Pipfile.lock");
+        if p.is_file() {
+            Ok(ForeignFile::PipfileLock(p))
+        } else {
+            Err(Error::ProjectFileNotFoundError(p))
+        }
     }
 
     pub fn read_lock_file(&self) -> Result<Lock> {
