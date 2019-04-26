@@ -221,6 +221,8 @@ impl Synchronizer {
 
         let mut error_context = vec![];
 
+        // TODO: This is very noisy. Can we pipe pip's output and make is
+        // less so? (e.g. discard some lines matching certain patterns).
         for (key, (_, hashed, requirement)) in requirements.into_iter() {
             let mut cmd = command()?;
             cmd.args(&[
