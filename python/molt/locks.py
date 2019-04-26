@@ -55,33 +55,17 @@ class PythonPackage(plette.models.DataView):
     }
 
 
-class Marker(plette.models.DataView):
-    __SCHEMA__ = {
-        "__marker__": {
-            "type": "list",
-            "minlength": 1,
-            "maxlength": 1,
-            "schema": {"type": "string", "required": True},
-        },
-    }
-
-    @classmethod
-    def validate(cls, data):
-        super(Marker, cls).validate({"__marker__": list(data.items())})
-
-
-class DependencyMarkers(plette.models.DataViewSequence):
-    item_class = Marker
-
-
-class DependencyDependencies(plette.models.DataViewMapping):
-    item_class = DependencyMarkers
-
-
 class Dependency(plette.models.DataView):
     __SCHEMA__ = {
-        "python": {"type": "dict"},
-        "dependencies": {"type": "dict"},
+        "python": {"type": "dict", "required": False},
+        "dependencies": {
+            "type": "dict",
+            "valueschema": {
+                "type": "list",
+                "nullable": True,
+                "schema": {"type": "string"},
+            },
+        },
     }
 
     @classmethod
@@ -89,27 +73,23 @@ class Dependency(plette.models.DataView):
         super(Dependency, cls).validate(data)
         if "python" in data:
             PythonPackage.validate(data["python"])
-        if "dependencies" in data:
-            DependencyDependencies.validate(data["dependencies"])
 
 
 class Dependencies(plette.models.DataViewMapping):
     item_class = Dependency
 
 
-class DependencyHashes(plette.models.DataViewSequence):
-    item_class = plette.models.Hash
-
-
-class Hashes(plette.models.DataViewMapping):
-    item_class = DependencyHashes
-
-
 class LockFile(plette.models.DataView):
     __SCHEMA__ = {
         "sources": {"type": "dict"},
         "dependencies": {"type": "dict"},
-        "hashes": {"type": "dict"},
+        "hashes": {
+            "type": "dict",
+            "valueschema": {
+                "type": "list",
+                "schema": {"type": "string"},
+            },
+        },
     }
 
     @classmethod
@@ -117,7 +97,6 @@ class LockFile(plette.models.DataView):
         super(LockFile, cls).validate(data)
         Sources.validate(data.get("sources", {}))
         Dependencies.validate(data.get("dependencies", {}))
-        Hashes.validate(data.get("hashes", {}))
 
     def dump(self, f, encoding=None):
         """Dump the lock file structure to a file.

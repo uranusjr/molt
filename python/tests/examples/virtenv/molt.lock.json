@@ -1,0 +1,325 @@
+{
+    "dependencies": {
+        "": {
+            "dependencies": {
+                "attrs": null,
+                "cached-property": null,
+                "certifi": null,
+                "chardet": null,
+                "click": null,
+                "colorama": null,
+                "crayons": null,
+                "idna": null,
+                "packaging": null,
+                "pyparsing": null,
+                "pythonfinder": null,
+                "requests": null,
+                "six": null,
+                "urllib3": null,
+                "virtualenv": null,
+                "vistir": null,
+                "yaspin": null
+            }
+        },
+        "[dev]": {
+            "dependencies": {
+                "bleach": null,
+                "certifi": null,
+                "chardet": null,
+                "docutils": null,
+                "idna": null,
+                "pkginfo": null,
+                "pygments": null,
+                "readme-renderer": null,
+                "requests": null,
+                "requests-toolbelt": null,
+                "six": null,
+                "tqdm": null,
+                "twine": null,
+                "urllib3": null,
+                "webencodings": null,
+                "wheel": null
+            }
+        },
+        "attrs": {
+            "python": {
+                "name": "attrs",
+                "version": "19.1.0"
+            }
+        },
+        "bleach": {
+            "python": {
+                "name": "bleach",
+                "version": "3.1.0"
+            }
+        },
+        "cached-property": {
+            "python": {
+                "name": "cached-property",
+                "version": "1.5.1"
+            }
+        },
+        "certifi": {
+            "python": {
+                "name": "certifi",
+                "version": "2019.3.9"
+            }
+        },
+        "chardet": {
+            "python": {
+                "name": "chardet",
+                "version": "3.0.4"
+            }
+        },
+        "click": {
+            "python": {
+                "name": "click",
+                "version": "7.0"
+            }
+        },
+        "colorama": {
+            "python": {
+                "name": "colorama",
+                "version": "0.4.1"
+            }
+        },
+        "crayons": {
+            "python": {
+                "name": "crayons",
+                "version": "0.2.0"
+            }
+        },
+        "docutils": {
+            "python": {
+                "name": "docutils",
+                "version": "0.14"
+            }
+        },
+        "idna": {
+            "python": {
+                "name": "idna",
+                "version": "2.8"
+            }
+        },
+        "packaging": {
+            "python": {
+                "name": "packaging",
+                "version": "19.0"
+            }
+        },
+        "pkginfo": {
+            "python": {
+                "name": "pkginfo",
+                "version": "1.5.0.1"
+            }
+        },
+        "pygments": {
+            "python": {
+                "name": "pygments",
+                "version": "2.3.1"
+            }
+        },
+        "pyparsing": {
+            "python": {
+                "name": "pyparsing",
+                "version": "2.4.0"
+            }
+        },
+        "pythonfinder": {
+            "python": {
+                "name": "pythonfinder",
+                "version": "1.2.0"
+            }
+        },
+        "readme-renderer": {
+            "python": {
+                "name": "readme-renderer",
+                "version": "24.0"
+            }
+        },
+        "requests": {
+            "python": {
+                "name": "requests",
+                "version": "2.21.0"
+            }
+        },
+        "requests-toolbelt": {
+            "python": {
+                "name": "requests-toolbelt",
+                "version": "0.9.1"
+            }
+        },
+        "six": {
+            "python": {
+                "name": "six",
+                "version": "1.12.0"
+            }
+        },
+        "tqdm": {
+            "python": {
+                "name": "tqdm",
+                "version": "4.31.1"
+            }
+        },
+        "twine": {
+            "python": {
+                "name": "twine",
+                "source": "pypi",
+                "version": "1.13.0"
+            }
+        },
+        "urllib3": {
+            "python": {
+                "name": "urllib3",
+                "version": "1.24.1"
+            }
+        },
+        "virtualenv": {
+            "python": {
+                "name": "virtualenv",
+                "version": "16.4.3"
+            }
+        },
+        "vistir": {
+            "python": {
+                "name": "vistir",
+                "version": "0.4.0"
+            }
+        },
+        "webencodings": {
+            "python": {
+                "name": "webencodings",
+                "version": "0.5.1"
+            }
+        },
+        "wheel": {
+            "python": {
+                "name": "wheel",
+                "source": "pypi",
+                "version": "0.33.1"
+            }
+        },
+        "yaspin": {
+            "python": {
+                "name": "yaspin",
+                "version": "0.14.1"
+            }
+        }
+    },
+    "hashes": {
+        "attrs": [
+            "sha256:69c0dbf2ed392de1cb5ec704444b08a5ef81680a61cb899dc08127123af36a79",
+            "sha256:f0b870f674851ecbfbbbd364d6b5cbdff9dcedbc7f3f5e18a6891057f21fe399"
+        ],
+        "bleach": [
+            "sha256:213336e49e102af26d9cde77dd2d0397afabc5a6bf2fed985dc35b5d1e285a16",
+            "sha256:3fdf7f77adcf649c9911387df51254b813185e32b2c6619f690b593a617e19fa"
+        ],
+        "cached-property": [
+            "sha256:3a026f1a54135677e7da5ce819b0c690f156f37976f3e30c5430740725203d7f",
+            "sha256:9217a59f14a5682da7c4b8829deadbfc194ac22e9908ccf7c8820234e80a1504"
+        ],
+        "certifi": [
+            "sha256:59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5",
+            "sha256:b26104d6835d1f5e49452a26eb2ff87fe7090b89dfcaee5ea2212697e1e1d7ae"
+        ],
+        "chardet": [
+            "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae",
+            "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"
+        ],
+        "click": [
+            "sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13",
+            "sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7"
+        ],
+        "colorama": [
+            "sha256:05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d",
+            "sha256:f8ac84de7840f5b9c4e3347b3c1eaa50f7e49c2b07596221daec5edaabbd7c48"
+        ],
+        "crayons": [
+            "sha256:41f0843815a8e3ac6fb445b7970d8b9c766e6f164092d84e7ea809b4c91418ec",
+            "sha256:8edcadb7f197e25f2cc094aec5bf7f1b6001d3f76c82d56f8d46f6fb1405554f"
+        ],
+        "docutils": [
+            "sha256:02aec4bd92ab067f6ff27a38a38a41173bf01bed8f89157768c1573f53e474a6",
+            "sha256:51e64ef2ebfb29cae1faa133b3710143496eca21c530f3f71424d77687764274",
+            "sha256:7a4bd47eaf6596e1295ecb11361139febe29b084a87bf005bf899f9a42edc3c6"
+        ],
+        "idna": [
+            "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407",
+            "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"
+        ],
+        "packaging": [
+            "sha256:0c98a5d0be38ed775798ece1b9727178c4469d9c3b4ada66e8e6b7849f8732af",
+            "sha256:9e1cbf8c12b1f1ce0bb5344b8d7ecf66a6f8a6e91bcb0c84593ed6d3ab5c4ab3"
+        ],
+        "pkginfo": [
+            "sha256:7424f2c8511c186cd5424bbf31045b77435b37a8d604990b79d4e70d741148bb",
+            "sha256:a6d9e40ca61ad3ebd0b72fbadd4fba16e4c0e4df0428c041e01e06eb6ee71f32"
+        ],
+        "pygments": [
+            "sha256:5ffada19f6203563680669ee7f53b64dabbeb100eb51b61996085e99c03b284a",
+            "sha256:e8218dd399a61674745138520d0d4cf2621d7e032439341bc3f647bff125818d"
+        ],
+        "pyparsing": [
+            "sha256:1873c03321fc118f4e9746baf201ff990ceb915f433f23b395f5580d1840cb2a",
+            "sha256:9b6323ef4ab914af344ba97510e966d64ba91055d6b9afa6b30799340e89cc03"
+        ],
+        "pythonfinder": [
+            "sha256:288103c4198fade433fef0f15635a3d69622796b844f2b9780812ae8d42db3ae",
+            "sha256:a21abc50b3146a3c968bd71eb4ec4931220a428f7d49b7dd21fab262ef54d116"
+        ],
+        "readme-renderer": [
+            "sha256:bb16f55b259f27f75f640acf5e00cf897845a8b3e4731b5c1a436e4b8529202f",
+            "sha256:c8532b79afc0375a85f10433eca157d6b50f7d6990f337fa498c96cd4bfc203d"
+        ],
+        "requests": [
+            "sha256:502a824f31acdacb3a35b6690b5fbf0bc41d63a24a45c4004352b0242707598e",
+            "sha256:7bf2a778576d825600030a110f3c0e3e8edc51dfaafe1c146e39a2027784957b"
+        ],
+        "requests-toolbelt": [
+            "sha256:380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df059e6f",
+            "sha256:968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0"
+        ],
+        "six": [
+            "sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c",
+            "sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
+        ],
+        "tqdm": [
+            "sha256:d385c95361699e5cf7622485d9b9eae2d4864b21cd5a2374a9c381ffed701021",
+            "sha256:e22977e3ebe961f72362f6ddfb9197cc531c9737aaf5f607ef09740c849ecd05"
+        ],
+        "twine": [
+            "sha256:0fb0bfa3df4f62076cab5def36b1a71a2e4acb4d1fa5c97475b048117b1a6446",
+            "sha256:d6c29c933ecfc74e9b1d9fa13aa1f87c5d5770e119f5a4ce032092f0ff5b14dc"
+        ],
+        "urllib3": [
+            "sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39",
+            "sha256:de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22"
+        ],
+        "virtualenv": [
+            "sha256:6aebaf4dd2568a0094225ebbca987859e369e3e5c22dc7d52e5406d504890417",
+            "sha256:984d7e607b0a5d1329425dd8845bd971b957424b5ba664729fab51ab8c11bc39"
+        ],
+        "vistir": [
+            "sha256:199a6031b02d1df216f05e170a04f8ae3568846baf8561cf8a029d821f2ee587",
+            "sha256:9564bd162df8d0078b41e6a9bd93c3cc9543bfb542443bcd251b83620f362cb4"
+        ],
+        "webencodings": [
+            "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78",
+            "sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923"
+        ],
+        "wheel": [
+            "sha256:66a8fd76f28977bb664b098372daef2b27f60dc4d1688cfab7b37a09448f0e9d",
+            "sha256:8eb4a788b3aec8abf5ff68d4165441bc57420c9f64ca5f471f58c3969fe08668"
+        ],
+        "yaspin": [
+            "sha256:441f8a6761e347652d04614899fd0a9cfda7439e2d5682e664bd31230c656176",
+            "sha256:d3ebcf8162e0ef8bb5484b8751d5b6d2fbf0720112c81f64614c308576a03b1d"
+        ]
+    },
+    "sources": {
+        "pypi": {
+            "url": "https://pypi.org/simple"
+        }
+    }
+}
