@@ -5,17 +5,34 @@ use std::env;
 use std::path::Path;
 use std::process::Command;
 
-enum DependedFile<'a> {
+enum ModuleEntry {
+    Directory,
+    PythonFile,
+}
+
+fn find_module_entry(p: &Path) -> Option<ModuleEntry> {
+    if p.is_dir() {
+        return Some(ModuleEntry::Directory);
+    }
+    if let Some(s) = p.extension() {
+        if s == "py" {
+            return Some(ModuleEntry::PythonFile);
+        }
+    }
+    None
+}
+
+enum VendorEntry<'a> {
     Requirements(&'a str),
     Script(&'a str),
 }
 
 static VENDOR_SCRIPT: &str = "__main__.py";
 
-fn find_depended_file(p: &Path) -> Option<DependedFile> {
+fn find_vendor_entry(p: &Path) -> Option<VendorEntry> {
     // The vendor script.
     if p.file_name()? == VENDOR_SCRIPT {
-        return Some(DependedFile::Script(VENDOR_SCRIPT));
+        return Some(VendorEntry::Script(VENDOR_SCRIPT));
     }
 
     // Requirements files.
@@ -30,7 +47,7 @@ fn find_depended_file(p: &Path) -> Option<DependedFile> {
     if parts.next().is_some() {
         return None;
     }
-    Some(DependedFile::Requirements(name))
+    Some(VendorEntry::Requirements(name))
 }
 
 fn python_command() -> Command {
@@ -57,11 +74,9 @@ fn main() {
 
     for entry in walkdir::WalkDir::new(root.join("python").join("molt")) {
         let entry = entry.expect("cannot read Python source dir entry");
-        // TODO: This is a bit lazy; rebuild is triggered for every file with
-        // name that ends with ".py". We need to implement something similar to
-        // find_depended_file if the Python module gets complicated.
-        if let Some(s) = entry.path().to_str() {
-            if s.ends_with(".py") {
+        let path = entry.path();
+        if let Some(_) = find_module_entry(&path) {
+            if let Some(s) = path.to_str() {
                 println!("cargo:rerun-if-changed={}", s);
             }
         }
@@ -71,7 +86,7 @@ fn main() {
     for entry in assets_dir.read_dir().expect("cannot read vendor dir") {
         let entry = entry.expect("cannot read vendor dir entry");
         let path = entry.path();
-        if let Some(_) = find_depended_file(&path) {
+        if let Some(_) = find_vendor_entry(&path) {
             if let Some(s) = path.to_str() {
                 println!("cargo:rerun-if-changed={}", s);
             }
