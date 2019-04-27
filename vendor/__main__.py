@@ -51,7 +51,9 @@ def _populate(root, requirements_txt):
 def _populate_molt(src, root):
     if not os.path.exists(root):
         os.makedirs(root)
-    shutil.copytree(os.path.join(src, "molt"), os.path.join(root, "molt"))
+    target = os.path.join(root, "molt")
+    shutil.rmtree(target)
+    shutil.copytree(os.path.join(src, "molt"), target)
 
 
 def _populate_pep425(root):

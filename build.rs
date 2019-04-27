@@ -1,3 +1,4 @@
+extern crate walkdir;
 extern crate which;
 
 use std::env;
@@ -52,6 +53,18 @@ fn main() {
 
     if let Some(s) = root.join("target").to_str() {
         println!("cargo:rereun-if-changed={}", s);
+    }
+
+    for entry in walkdir::WalkDir::new(root.join("python").join("molt")) {
+        let entry = entry.expect("cannot read Python source dir entry");
+        // TODO: This is a bit lazy; rebuild is triggered for every file with
+        // name that ends with ".py". We need to implement something similar to
+        // find_depended_file if the Python module gets complicated.
+        if let Some(s) = entry.path().to_str() {
+            if s.ends_with(".py") {
+                println!("cargo:rerun-if-changed={}", s);
+            }
+        }
     }
 
     let assets_dir = root.join("vendor");

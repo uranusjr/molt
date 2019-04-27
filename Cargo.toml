@@ -25,4 +25,5 @@ url_serde = "0.2"
 which = "2.0"
 
 [build-dependencies]
+walkdir = "2.2"
 which = "2.0"

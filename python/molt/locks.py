@@ -98,6 +98,18 @@ class LockFile(plette.models.DataView):
         Sources.validate(data.get("sources", {}))
         Dependencies.validate(data.get("dependencies", {}))
 
+    @property
+    def sources(self):
+        return Sources(self._data.get("sources", {}))
+
+    @property
+    def dependencies(self):
+        return Dependencies(self._data.get("dependencies", {}))
+
+    @property
+    def hashes(self):
+        return self._data.get("hashes", {})
+
     def dump(self, f, encoding=None):
         """Dump the lock file structure to a file.
 
