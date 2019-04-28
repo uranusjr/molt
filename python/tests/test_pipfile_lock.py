@@ -10,7 +10,7 @@ import plette
 import molt.pipfile_lock
 
 
-TEST_ROOT = os.path.abspath(os.path.dirname(__file__))
+SAMPLES_ROOT = os.path.abspath(os.path.join(__file__, "..", "..", "samples"))
 
 
 @pytest.mark.parametrize(
@@ -22,8 +22,7 @@ TEST_ROOT = os.path.abspath(os.path.dirname(__file__))
 )
 def test_to_lock_file(example_name, editables):
     pipfile_lock_path = os.path.join(
-        TEST_ROOT,
-        "examples",
+        SAMPLES_ROOT,
         example_name,
         "Pipfile.lock",
     )
@@ -39,8 +38,7 @@ def test_to_lock_file(example_name, editables):
         assert {m.message.package_name for m in w} == editables
 
     molt_lock_path = os.path.join(
-        TEST_ROOT,
-        "examples",
+        SAMPLES_ROOT,
         example_name,
         "molt.lock.json",
     )

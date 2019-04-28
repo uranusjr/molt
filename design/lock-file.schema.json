@@ -10,13 +10,38 @@
                     "type": "object",
                     "properties": {
                         "python": {
-                            "name": {"type": "string"},
-                            "version": {"type": "string"},
-                            "url": {"type": "string"},
-                            "source": {"type": ["null", "string"]},
                             "oneOf": [
-                                {"required": ["name", "version"]},
-                                {"required": ["name", "url"]}
+                                {
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "version": {"type": "string"},
+                                        "source": {"type": ["null", "string"]}
+                                    },
+                                    "required": ["name", "version"]
+                                },
+                                {
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "url": {"type": "string"},
+                                        "no_verify_ssl": {"type": "boolean"}
+                                    },
+                                    "required": ["name", "url"]
+                                },
+                                {
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "path": {"type": "string"}
+                                    },
+                                    "required": ["name", "path"]
+                                },
+                                {
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "vcs": {"type": "string"},
+                                        "ref": {"type": "string"}
+                                    },
+                                    "required": ["name", "vcs", "ref"]
+                                }
                             ]
                         },
                         "dependencies": {

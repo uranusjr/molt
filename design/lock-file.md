@@ -54,8 +54,9 @@ channels.)
 
 Each source entry should contain a key, URL, that points to the API’s root URL,
 e.g. `https://pypi.org/simple` for PyPI. If the optional key `no_verify_ssl`
-is specified as false, SSL errors are ignored when accessing the API (the same
+is specified as true, SSL errors are ignored when accessing the API (the same
 as supplying `--trusted-host` to pip).
+
 
 #### `dependencies`
 
@@ -76,17 +77,36 @@ Each dependency entry may contain one or both of the following keys:
   discussion below for reasoning.)
 * *python*, if specified, is an object specifying a concrete package to
   install. This object must contain one key, *name* to specify the package, and
-  one of *version* or *url* to specify the version. An optional key *source*
-  may be used to specify where the package should be looked for. The value of
-  *source*, if a string, should be the key to an entry in the top-level
-  `sources` section. If *sources* is null or left out, the tool should decide
-  how and where the package is fetched (e.g. consulting [pip configurations]).
+  other keys to specify how the package should be found.
+
+(The *python* key should specify a package using the Python package format,
+such those available on PyPI. This may be extended in the future to include
+other package sources like Conda.)
+
+##### Specify a Python package to find
+
+A Python package can contain exactly one of the following keys to specify how
+it is found:
+
+* If `version` is present, this is a *named requirement*, and `version`
+  specifies the version to look for. An optional key `source` may be used to
+  specify where the package should be looked for. The value of `source`, if a
+  string, should be the key to an entry in the top-level `sources` section. If
+  `sources` is null or left out, the tool should decide how and where the
+  package is fetched (e.g. consulting [pip configurations]).
+* If `url` is present, its value is used to download the package. If the
+  optional key `no_verify_ssl` is specified as true, SSL errors are ignored
+  when downloading the package (the same as supplying `--trusted-host` to pip).
+* If `path` is present, its value should be a path relative to the directory
+  containing the lock file. The file located at the path will be used as the
+  package.
+* If `vcs` is present, the value should be a VCS URL, as specified by
+  [pip VCS support]. An additional key `ref` is required that points to an
+  exact revision of the VCS repository, e.g. a Git commit.
 
 [pip configurations]: https://pip.pypa.io/en/stable/user_guide/#config-file
+[pip VCS support]: https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
 
-(The *python* key should specify a package on a Python package index, such as
-PyPI. This may be extended in the future to include other package sources like
-Conda.)
 
 #### `hashes`
 
@@ -152,6 +172,13 @@ embedded inside `dependencies`. This decision is made to improve readability
 since both the list of hashes and hashes themselves are not usually
 consumable for humans, and tend to be quite long, making the dependency list
 difficult to read on smaller screens.
+
+#### Out-of-line source definition
+
+Unlike poetry.lock, the sources are defined in their own mapping, instead of
+embedded inside `dependencies`. This decision is made to improve readability
+since the source definition can be repetitive, and not easily identifiable for
+humans if the same source occurs multiple times in a lock file.
 
 ## How Molt specifies Python packages
 
