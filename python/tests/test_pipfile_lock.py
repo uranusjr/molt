@@ -32,6 +32,8 @@ def test_to_lock_file(example_name, editables, vcsreqs):
         warnings.simplefilter("always")
         lock = molt.pipfile_lock.to_lock_file(pipfile_lock)
 
+        assert len(w) == (len(editables) + len(vcsreqs))
+
         assert editables == {
             m.message.package_name for m in w
             if m.category == molt.pipfile_lock.EditablePackageDropped
