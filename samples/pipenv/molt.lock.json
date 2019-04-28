@@ -71,6 +71,7 @@
                 "more-itertools": null,
                 "orderedmultidict": null,
                 "packaging": null,
+                "passa": null,
                 "parso": null,
                 "parver": null,
                 "pathlib2": [
@@ -113,6 +114,7 @@
                 "tap-py": null,
                 "toml": null,
                 "tomlkit": null,
+                "towncrier": null,
                 "tqdm": null,
                 "twine": null,
                 "typing": [
@@ -436,6 +438,13 @@
                 "version": "0.2.1"
             }
         },
+        "passa": {
+            "python": {
+                "name": "passa",
+                "vcs": "git+https://github.com/sarugaku/passa.git",
+                "ref": "a2ba0b30c86339cae5ef3a03046fc9c583452c40"
+            }
+        },
         "pathlib2": {
             "python": {
                 "name": "pathlib2",
@@ -643,6 +652,13 @@
             "python": {
                 "name": "tomlkit",
                 "version": "0.5.3"
+            }
+        },
+        "towncrier": {
+            "python": {
+                "name": "towncrier",
+                "vcs": "git+https://github.com/hawkowl/towncrier.git",
+                "ref": "ecd438c9c0ef132a92aba2eecc4dc672ccf9ec63"
             }
         },
         "tqdm": {

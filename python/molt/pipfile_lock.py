@@ -25,10 +25,6 @@ class _EditablePackage(ValueError):
     pass
 
 
-class _VCSPackage(ValueError):
-    pass
-
-
 class PackageSpecifierNotSupported(PipfileLockError, ValueError):
     pass
 
@@ -36,20 +32,20 @@ class PackageSpecifierNotSupported(PipfileLockError, ValueError):
 class EditablePackageDropped(UserWarning):
     def __init__(self, name):
         super(EditablePackageDropped, self).__init__(
-            "Editable package {!r} dropped (not supported)".format(name)
+            "Editable package {!r} dropped".format(name)
         )
         self.package_name = name
 
 
-class VCSPackageDropped(UserWarning):
+class VCSPackageNotEditable(UserWarning):
     def __init__(self, name):
-        super(EditablePackageDropped, self).__init__(
-            "VCS package {!r} dropped (not supported)".format(name)
+        super(VCSPackageNotEditable, self).__init__(
+            "VCS package {!r} converted to non-editable".format(name)
         )
         self.package_name = name
 
 
-def _parse_vcs(package):
+def _parse_vcs_info(package):
     try:
         ref = package.ref
     except AttributeError:
@@ -64,21 +60,40 @@ def _parse_vcs(package):
     return None
 
 
-def _parse_spec(package):
-    if getattr(package, "editable", False):
-        raise _EditablePackage(package)
+def _parse_spec(name, package):
+    editable = getattr(package, "editable", False)
 
-    vcs = _parse_vcs(package)
-    if vcs is not None:
-        raise _VCSPackage(package)
+    vcs_info = _parse_vcs_info(package)
+    if vcs_info is not None:
+        # Keep editable VCS (but drop editable flag) because people generally
+        # specify it to work around a pip bug and force dependency resolution.
+        # The editable property itself likely does not matter.
+        if editable:
+            warnings.warn(VCSPackageNotEditable(name))
+        vcs, url, ref = vcs_info
+        return {"vcs": "{}+{}".format(vcs, url), "ref": ref}
+
+    # Other than VCS, people generally specify editable to get its specific
+    # behavior. We can't support that yet.
+    if editable:
+        raise _EditablePackage(package)
 
     try:
         v = package.url
     except AttributeError:
         pass
     else:
-        return ("url", v)
+        return {"url": v}
 
+    try:
+        v = package.path
+    except AttributeError:
+        pass
+    else:
+        return {"path": v}
+
+    # This is tried last because Pipenv liberally stick versions into other
+    # kinds of requirement specifications.
     try:
         v = package.version
     except AttributeError:
@@ -86,7 +101,7 @@ def _parse_spec(package):
     else:
         if not v.startswith("=="):
             raise InvalidVersion(v)
-        return ("version", v[2:])
+        return {"version": v[2:]}
 
     raise PackageSpecifierNotSupported(package._data)
 
@@ -96,14 +111,11 @@ def _generate_packages(section):
         result = {"name": key}
 
         try:
-            spec_key, spec_value = _parse_spec(package)
+            spec = _parse_spec(key, package)
         except _EditablePackage:
             warnings.warn(EditablePackageDropped(key))
             continue
-        except _VCSPackage:
-            warnings.warn(VCSPackageDropped(key))
-            continue
-        result[spec_key] = spec_value
+        result.update(spec)
 
         # TODO: Validate this against the source mapping?
         try:

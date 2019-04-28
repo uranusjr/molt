@@ -13,13 +13,13 @@ from _testcommons import SAMPLES_ROOT
 
 
 @pytest.mark.parametrize(
-    "example_name, editables",
+    "example_name, editables, vcsreqs",
     [
-        ("pipenv", {"passa", "pipenv", "pytest-pypi", "towncrier"}),
-        ("virtenv", {"virtenv"}),
+        ("pipenv", {"pipenv", "pytest-pypi"}, {"passa", "towncrier"}),
+        ("virtenv", {"virtenv"}, set()),
     ],
 )
-def test_to_lock_file(example_name, editables):
+def test_to_lock_file(example_name, editables, vcsreqs):
     pipfile_lock_path = os.path.join(
         SAMPLES_ROOT,
         example_name,
@@ -29,12 +29,17 @@ def test_to_lock_file(example_name, editables):
         pipfile_lock = plette.Lockfile.load(f)
 
     with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter(
-            "always", molt.pipfile_lock.EditablePackageDropped,
-        )
+        warnings.simplefilter("always")
         lock = molt.pipfile_lock.to_lock_file(pipfile_lock)
 
-        assert {m.message.package_name for m in w} == editables
+        assert editables == {
+            m.message.package_name for m in w
+            if m.category == molt.pipfile_lock.EditablePackageDropped
+        }
+        assert vcsreqs == {
+            m.message.package_name for m in w
+            if m.category == molt.pipfile_lock.VCSPackageNotEditable
+        }
 
     molt_lock_path = os.path.join(SAMPLES_ROOT, example_name, "molt.lock.json")
     with io.open(molt_lock_path, encoding="utf-8") as f:
