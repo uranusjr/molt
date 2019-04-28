@@ -1,5 +1,8 @@
+import io
 import json
+import os
 
+import jsonschema
 import plette.models
 import six
 
@@ -35,11 +38,29 @@ class _JSONEncoder(json.JSONEncoder):
         yield "\n"
 
 
+def _read_schema():
+    p = os.path.abspath(os.path.join(__file__, "..", "locks.schema.json"))
+    with io.open(p, encoding="utf-8") as f:
+        return json.load(f)
+
+
+_SCHEMA = _read_schema()
+
+_SOURCE_SCHEMA = next(iter(
+    _SCHEMA["properties"]["sources"]["patternProperties"].values()
+))
+
+_DEPENDENCY_SCHEMA = next(iter(
+    _SCHEMA["properties"]["dependencies"]["patternProperties"].values()
+))
+
+_PYTHONPACKAGE_SCHEMA = _DEPENDENCY_SCHEMA["properties"]["python"]
+
+
 class Source(plette.models.DataView):
-    __SCHEMA__ = {
-        "url": {"type": "string", "required": True},
-        "no_verify_ssl": {"type": "boolean"},
-    }
+    @classmethod
+    def validate(cls, data):
+        jsonschema.validate(instance=data, schema=_SOURCE_SCHEMA)
 
 
 class Sources(plette.models.DataViewMapping):
@@ -47,32 +68,15 @@ class Sources(plette.models.DataViewMapping):
 
 
 class PythonPackage(plette.models.DataView):
-    __SCHEMA__ = {
-        "name": {"type": "string", "required": True},
-        "version": {"type": "string", "excludes": ["url"], "required": True},
-        "url": {"type": "string", "excludes": ["version"], "required": True},
-        "source": {"type": "string", "nullable": True},
-    }
+    @classmethod
+    def validate(cls, data):
+        jsonschema.validate(instance=data, schema=_PYTHONPACKAGE_SCHEMA)
 
 
 class Dependency(plette.models.DataView):
-    __SCHEMA__ = {
-        "python": {"type": "dict", "required": False},
-        "dependencies": {
-            "type": "dict",
-            "valueschema": {
-                "type": "list",
-                "nullable": True,
-                "schema": {"type": "string"},
-            },
-        },
-    }
-
     @classmethod
     def validate(cls, data):
-        super(Dependency, cls).validate(data)
-        if "python" in data:
-            PythonPackage.validate(data["python"])
+        jsonschema.validate(instance=data, schema=_DEPENDENCY_SCHEMA)
 
 
 class Dependencies(plette.models.DataViewMapping):
@@ -80,23 +84,9 @@ class Dependencies(plette.models.DataViewMapping):
 
 
 class LockFile(plette.models.DataView):
-    __SCHEMA__ = {
-        "sources": {"type": "dict"},
-        "dependencies": {"type": "dict"},
-        "hashes": {
-            "type": "dict",
-            "valueschema": {
-                "type": "list",
-                "schema": {"type": "string"},
-            },
-        },
-    }
-
     @classmethod
     def validate(cls, data):
-        super(LockFile, cls).validate(data)
-        Sources.validate(data.get("sources", {}))
-        Dependencies.validate(data.get("dependencies", {}))
+        jsonschema.validate(instance=data, schema=_SCHEMA)
 
     @property
     def sources(self):

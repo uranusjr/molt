@@ -8,6 +8,7 @@ use std::process::Command;
 enum ModuleEntry {
     Directory,
     PythonFile,
+    JSONFile,
 }
 
 fn find_module_entry(p: &Path) -> Option<ModuleEntry> {
@@ -17,6 +18,8 @@ fn find_module_entry(p: &Path) -> Option<ModuleEntry> {
     if let Some(s) = p.extension() {
         if s == "py" {
             return Some(ModuleEntry::PythonFile);
+        } else if s == "json" {
+            return Some(ModuleEntry::JSONFile);
         }
     }
     None

@@ -1,6 +1,7 @@
 # The Lock File
 
-The structure of the lock file is defined in the accompanying JSON schema file.
+The structure of the lock file is defined in the accompanying JSON schema file,
+located in <../python/molt/locks.schema.json>.
 
 ## Design
 

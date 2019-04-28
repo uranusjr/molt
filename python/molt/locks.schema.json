@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "properties": {
+        "dependencies": {
+            "type": "object",
+            "patternProperties": {
+                "^(?P<dependencyKey>.*)$": {
+                    "type": "object",
+                    "properties": {
+                        "python": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "version": {"type": "string"},
+                                    "source": {"type": ["null", "string"]}
+                                },
+                                "required": ["name", "version"]
+                            },
+                            {
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "url": {"type": "string"},
+                                    "no_verify_ssl": {"type": "boolean"}
+                                },
+                                "required": ["name", "url"]
+                            },
+                            {
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "path": {"type": "string"}
+                                },
+                                "required": ["name", "path"]
+                            },
+                            {
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "vcs": {"type": "string"},
+                                    "ref": {"type": "string"}
+                                },
+                                "required": ["name", "vcs", "ref"]
+                            }
+                        ]
+                    },
+                    "dependencies": {
+                        "type": "object",
+                        "patternProperties": {
+                            "^(?P<dependencyKey>.+)": {
+                                "oneOf": [
+                                    {"type": "null"},
+                                    {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    }
+                }
+            }
+        },
+        "hashes": {
+            "type": "object",
+            "patternProperties": {
+                "^(?P<dependencyKey>.*)$": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^(?P<type>[a-z0-9_]+):(?P<value>.+)$"
+                    }
+                }
+            }
+        },
+        "sources": {
+            "type": "object",
+            "patternProperties": {
+                "^(?P<sourceName>.*)$": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "no_verify_ssl": {"type": "boolean"}
+                    },
+                    "required": ["url"]
+                }
+            }
+        }
+    }
+}

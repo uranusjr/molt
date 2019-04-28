@@ -1,4 +1,4 @@
-cerberus==1.2
+jsonschema==3.0.1
 packaging==19.0
 plette==0.2.2
 pyparsing==2.4.0
