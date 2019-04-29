@@ -37,7 +37,7 @@ class DuplicateSourceDropped(UserWarning):
         self.dropping_url = dropping_url
 
 
-def parse(f, encoding=None):
+def load(f, encoding=None):
     """Parse a poetry.lock file.
 
     If `encoding` is specified, `f` is treated as binary; if `encoding` is
