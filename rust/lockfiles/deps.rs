@@ -8,199 +8,13 @@ use serde::de::{
     self,
     Deserialize,
     Deserializer,
-    MapAccess,
     SeqAccess,
-    Unexpected,
     Visitor,
 };
-use url::Url;
 
-use super::{Hashes, Source, Sources};
+use super::{Hashes, PythonPackage, Sources};
+use super::pypackages::{Entry as PythonPackageEntry};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum PythonPackageSpecifier {
-    Version(String),
-    Url(url::Url),
-}
-
-#[derive(Clone, Debug)]
-pub struct PythonPackage {
-    name: String,
-    specifier: PythonPackageSpecifier,
-    source: Option<Rc<Source>>,
-    hashes: Option<Hashes>,
-}
-
-impl PythonPackage {
-    #[cfg(test)]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn to_requirement_txt(&self) -> (bool, String) {
-        let mut args = vec![];
-
-        args.push(match self.specifier {
-            PythonPackageSpecifier::Version(ref version) => {
-                format!("{} == {}", self.name, version)
-            },
-            PythonPackageSpecifier::Url(ref url) => {
-                let mut url = url.clone();
-                url.set_fragment(Some(&format!("egg={}", self.name)));
-                url.to_string()
-            },
-        });
-
-        if let Some(ref source) = self.source {
-            args.push(format!("--index-url={}", source.base_url()));
-            if source.no_verify_ssl() {
-                if let Some(host) = source.base_url().host_str() {
-                    args.push(format!("--trusted-host={}", host));
-                }
-            }
-        }
-
-        if let Some(ref hashes) = self.hashes {
-            for hash in hashes.iter() {
-                args.push(String::from("--hash"));
-                args.push(format!("{}", hash));
-            }
-        }
-
-        (self.hashes.is_some(), args.join(" "))
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct PythonPackageEntry {
-    name: String,
-    source: Option<String>,
-    specifier: PythonPackageSpecifier,
-}
-
-impl PythonPackageEntry {
-    fn make_python_package<E>(
-        &self,
-        sources: &Sources,
-        hashes: Option<Hashes>,
-    ) -> Result<PythonPackage, E>
-        where E: de::Error
-    {
-        let source = match self.source {
-            None => None,
-            Some(ref k) => match sources.get(k) {
-                Some(s) => Some(s),
-                None => {
-                    let s = format!("unresolvable source name {:?}", k);
-                    return Err(de::Error::custom(s));
-                },
-            },
-        };
-        Ok(PythonPackage {
-            name: self.name.clone(),
-            specifier: self.specifier.clone(),
-            source,
-            hashes,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for PythonPackageEntry {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        #[serde(field_identifier, rename_all = "snake_case")]
-        enum Field { Name, Source, Version, Url }
-
-        struct PythonPackageEntryVisitor;
-
-        impl<'de> Visitor<'de> for PythonPackageEntryVisitor {
-            type Value = PythonPackageEntry;
-
-            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("Python package specification")
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-                where A: MapAccess<'de>
-            {
-                let mut name: Option<String> = None;
-                let mut specifier: Option<PythonPackageSpecifier> = None;
-                let mut source: Option<String> = None;
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        Field::Name => {
-                            if name.is_some() {
-                                return Err(de::Error::duplicate_field("name"));
-                            }
-                            name = Some(map.next_value()?);
-                        },
-                        Field::Source => {
-                            if source.is_some() {
-                                return Err(de::Error::duplicate_field(
-                                    "source",
-                                ));
-                            }
-                            source = Some(map.next_value()?);
-                        },
-                        Field::Version => {
-                            match specifier {
-                                None => {},
-                                Some(PythonPackageSpecifier::Version(_)) => {
-                                    return Err(de::Error::duplicate_field(
-                                        "version",
-                                    ));
-                                },
-                                Some(PythonPackageSpecifier::Url(_)) => {
-                                    return Err(de::Error::custom(
-                                        "cannot specify both `version` and \
-                                         `url` for a Python package",
-                                    ));
-                                },
-                            }
-                            specifier = Some(PythonPackageSpecifier::Version(
-                                map.next_value()?,
-                            ));
-                        },
-                        Field::Url => {
-                            match specifier {
-                                None => {},
-                                Some(PythonPackageSpecifier::Url(_)) => {
-                                    return Err(de::Error::duplicate_field(
-                                        "url",
-                                    ));
-                                },
-                                Some(PythonPackageSpecifier::Version(_)) => {
-                                    return Err(de::Error::custom(
-                                        "cannot specify both `version` and \
-                                         `url` for a Python package",
-                                    ));
-                                },
-                            }
-                            let url = map.next_value()?;
-                            let url = Url::parse(url).map_err(|_| {
-                                de::Error::invalid_value(
-                                    Unexpected::Str(&url), &"URL",
-                                )
-                            })?;
-                            specifier = Some(PythonPackageSpecifier::Url(url));
-                        },
-                    }
-                }
-
-                let name = name.ok_or_else(|| {
-                    de::Error::missing_field("name")
-                })?;
-                let specifier = specifier.ok_or_else(|| {
-                    de::Error::missing_field("`version` or `url`")
-                })?;
-                Ok(PythonPackageEntry { name, specifier, source })
-            }
-        }
-        deserializer.deserialize_map(PythonPackageEntryVisitor)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct Marker(Vec<String>);
@@ -401,13 +215,9 @@ mod tests {
         }"#;
 
         let entry: PythonPackageEntry = from_str(JSON).unwrap();
-        assert_eq!(entry, PythonPackageEntry {
-            name: String::from("certifi"),
-            specifier: PythonPackageSpecifier::Version(
-                String::from("2017.7.27.1"),
-            ),
-            source: Some(String::from("default")),
-        });
+        assert_eq!(entry, PythonPackageEntry::new_versioned(
+            "certifi", "2017.7.27.1", Some("default"),
+        ));
     }
 
     #[test]
@@ -418,13 +228,9 @@ mod tests {
         }"#;
 
         let entry: PythonPackageEntry = from_str(JSON).unwrap();
-        assert_eq!(entry, PythonPackageEntry {
-            name: String::from("certifi"),
-            specifier: PythonPackageSpecifier::Version(
-                String::from("2017.7.27.1"),
-            ),
-            source: None,
-        });
+        assert_eq!(entry, PythonPackageEntry::new_versioned(
+                "certifi", "2017.7.27.1", None,
+        ));
     }
 
     #[test]
@@ -464,11 +270,10 @@ mod tests {
             ])),
         );
 
-        assert_eq!(entry.python, Some(PythonPackageEntry {
-            name: String::from("foo"),
-            specifier: PythonPackageSpecifier::Version(String::from("2.18.4")),
-            source: None,
-        }));
+        assert_eq!(
+            entry.python,
+            Some(PythonPackageEntry::new_versioned("foo", "2.18.4", None)),
+        );
     }
 
     #[test]
