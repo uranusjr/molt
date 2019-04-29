@@ -91,8 +91,8 @@ def _parse_source(package):
     return Source(source["reference"], source["url"])
 
 
-def _generate_packages(package_data_list):
-    for package_data in package_data_list:
+def _generate_packages(poetry_lock):
+    for package_data in poetry_lock["package"]:
         name = package_data["name"]
         result = {"name": name}
 
@@ -109,9 +109,42 @@ def _generate_packages(package_data_list):
         yield (
             canonicalize_name(name),
             result,
-            package_data.get("marker"),
             source,
         )
+
+
+def _generate_dependencies(poetry_lock):
+    undepended_packages = {
+        canonicalize_name(p["name"]): p
+        for p in poetry_lock["package"]
+    }
+    packages_markers = {
+        canonicalize_name(p["name"]): p["marker"].replace('"', "'")
+        for p in poetry_lock["package"]
+        if "marker" in p
+    }
+
+    for package_data in poetry_lock["package"]:
+        for dep in package_data.get("dependencies", ()):
+            dep = canonicalize_name(dep)
+            undepended_packages.pop(dep, None)
+            package_name = canonicalize_name(package_data["name"])
+            yield package_name, dep, packages_markers.get(dep)
+
+    for package_data in undepended_packages.values():
+        if package_data.get("optional"):
+            continue
+        if package_data["category"] == "main":
+            key = ""
+        else:
+            key = "[{}]".format(package_data["category"])
+        dep = canonicalize_name(package_data["name"])
+        yield key, dep, packages_markers.get(dep)
+
+    for extra_name, extra_pkg_names in poetry_lock.get("extras", {}).items():
+        for dep in extra_pkg_names:
+            dep = canonicalize_name(dep)
+            yield "[{}]".format(extra_name), dep, packages_markers.get(dep)
 
 
 def to_lock_file(poetry_lock):
@@ -124,17 +157,22 @@ def to_lock_file(poetry_lock):
     sources = {}
     dependencies = {}
 
-    poetry_packages = poetry_lock["package"]
-    for key, res, marker, src in _generate_packages(poetry_packages):
+    for key, result, src in _generate_packages(poetry_lock):
         if src is not None:
             if src.name in sources and sources[src.name]["url"] != src.url:
                 warnings.warn(DuplicateSourceDropped(
                     src, sources[src.name].url,
                 ))
             sources[src.name] = {"url": src.url}
-        dependencies[key] = res
+        dependencies[key] = {"python": result}
 
-    # TODO: Resolve dependency graph.
+    for dependent, depended, marker in _generate_dependencies(poetry_lock):
+        if dependent not in dependencies:
+            dependencies[dependent] = {"dependencies": {}}
+        elif "dependencies" not in dependencies[dependent]:
+            dependencies[dependent]["dependencies"] = {}
+        markers = [marker] if marker else None
+        dependencies[dependent]["dependencies"][depended] = markers
 
     data = {
         "sources": sources,
