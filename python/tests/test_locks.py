@@ -37,7 +37,7 @@ def test_source_invalid():
         {
             "name": "pip",
             "vcs": "git+https://github.com/pypa/pip.git",
-            "ref": "8d0b73fc5b289c0347d7261e5efeeb40a8470382",
+            "rev": "8d0b73fc5b289c0347d7261e5efeeb40a8470382",
         },
     ],
 )
@@ -54,7 +54,7 @@ def test_python_package(data):
         # Missing version.
         {"name": "pip", "source": "private"},
 
-        # Missing VCS ref.
+        # Missing VCS revision.
         {"name": "pip", "vcs": "git+https://github.com/pypa/pip.git"},
     ],
 )

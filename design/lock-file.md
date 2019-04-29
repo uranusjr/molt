@@ -104,7 +104,7 @@ it is found:
   containing the lock file. The file located at the path will be used as the
   package.
 * If `vcs` is present, the value should be a VCS URL, as specified by
-  [pip VCS support]. An additional key `ref` is required that points to an
+  [pip VCS support]. An additional key `rev` is required that points to an
   exact revision of the VCS repository, e.g. a Git commit.
 
 [pip configurations]: https://pip.pypa.io/en/stable/user_guide/#config-file

@@ -71,7 +71,7 @@ def _parse_spec(package):
     elif source_type in ["git", "hg", "bzr", "svn"]:
         return {
             "vcs": "{}+{}".format(source_type, source["url"]),
-            "ref": source["reference"],
+            "rev": source["reference"],
         }
 
     try:

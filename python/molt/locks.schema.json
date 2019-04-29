@@ -38,9 +38,9 @@
                                     "properties": {
                                         "name": {"type": "string"},
                                         "vcs": {"type": "string"},
-                                        "ref": {"type": "string"}
+                                        "rev": {"type": "string"}
                                     },
-                                    "required": ["name", "vcs", "ref"]
+                                    "required": ["name", "vcs", "rev"]
                                 }
                             ]
                         },

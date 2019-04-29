@@ -442,7 +442,7 @@
             "python": {
                 "name": "passa",
                 "vcs": "git+https://github.com/sarugaku/passa.git",
-                "ref": "a2ba0b30c86339cae5ef3a03046fc9c583452c40"
+                "rev": "a2ba0b30c86339cae5ef3a03046fc9c583452c40"
             }
         },
         "pathlib2": {
@@ -658,7 +658,7 @@
             "python": {
                 "name": "towncrier",
                 "vcs": "git+https://github.com/hawkowl/towncrier.git",
-                "ref": "ecd438c9c0ef132a92aba2eecc4dc672ccf9ec63"
+                "rev": "ecd438c9c0ef132a92aba2eecc4dc672ccf9ec63"
             }
         },
         "tqdm": {

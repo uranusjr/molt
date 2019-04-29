@@ -47,7 +47,7 @@ class VCSPackageNotEditable(UserWarning):
 
 def _parse_vcs_info(package):
     try:
-        ref = package.ref
+        rev = package.ref
     except AttributeError:
         return None
     for vcs in ["git", "hg", "bzr", "svn"]:
@@ -56,7 +56,7 @@ def _parse_vcs_info(package):
         except AttributeError:
             continue
         else:
-            return vcs, url, ref
+            return vcs, url, rev
     return None
 
 
@@ -70,8 +70,8 @@ def _parse_spec(name, package):
         # The editable property itself likely does not matter.
         if editable:
             warnings.warn(VCSPackageNotEditable(name))
-        vcs, url, ref = vcs_info
-        return {"vcs": "{}+{}".format(vcs, url), "ref": ref}
+        vcs, url, rev = vcs_info
+        return {"vcs": "{}+{}".format(vcs, url), "rev": rev}
 
     # Other than VCS, people generally specify editable to get its specific
     # behavior. We can't support that yet.
