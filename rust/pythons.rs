@@ -203,6 +203,8 @@ impl Interpreter {
         Ok(env_dir.join("lib").join(&name).join("site-packages"))
     }
 
+    // This extra function is so tests can silence warnings, but the interface
+    // can stay clean.
     fn convert_foreign_lock_impl(
         &self,
         foreign: Foreign,
@@ -260,6 +262,7 @@ impl Interpreter {
         Ok(cmd.status()?.code().unwrap_or(-1))
     }
 
+    #[inline]
     pub fn convert_foreign_lock(
         &self,
         foreign: Foreign,
