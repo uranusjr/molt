@@ -15,9 +15,7 @@ impl<'a> Command<'a> {
 
     pub fn run(&self, interpreter: Interpreter) -> Result<()> {
         let project = Project::find_in_cwd(interpreter)?;
-
         let code = project.convert_foreign_lock()?;
-
         if code == 0 {
             Ok(())
         } else {

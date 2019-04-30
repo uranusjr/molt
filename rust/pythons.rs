@@ -63,10 +63,17 @@ pub struct Interpreter {
     name: String,
     location: PathBuf,
 
+    // Self cache to avoid repeated querying of compatibility tag.
     comptagcache: Option<String>,
 }
 
 impl Interpreter {
+    fn new<S>(name: S, location: PathBuf) -> Self
+        where S: Into<String>
+    {
+        Self { name: name.into(), location, comptagcache: None }
+    }
+
     pub fn discover<I, S>(name: &str, program: S, args: I) -> Result<Self>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
@@ -80,11 +87,7 @@ impl Interpreter {
             .output()?;
 
         let location = PathBuf::from(String::from_utf8(out.stdout).unwrap());
-        Ok(Self {
-            name: name.to_string(),
-            location,
-            comptagcache: None,
-        })
+        Ok(Self::new(name.to_string(), location))
     }
 
     pub fn name(&self) -> &str {
@@ -200,36 +203,31 @@ impl Interpreter {
         Ok(env_dir.join("lib").join(&name).join("site-packages"))
     }
 
-    fn run_molt_helper(&self, code: &str) -> Result<Option<i32>> {
-        let tmp_dir = TempDir::new()?;
-        vendors::Molt::populate_to(tmp_dir.path())?;
-
-        let retcode = self.interpret(
-            Some("utf-8"),
-            code,
-            tmp_dir.path(),
-            empty::<&str>(),
-        )?.status()?.code();
-        Ok(retcode)
-    }
-
-    pub fn convert_foreign_lock(
+    fn convert_foreign_lock_impl(
         &self,
         foreign: Foreign,
         output: &Path,
+        quiet: bool,
     ) -> Result<i32> {
+        // Silence all warnings from Python.
+        // This needs to be in one line, otherwise unindent breaks.
+        static QUIET_CODE: &str = "import warnings; \
+            warnings.formatwarning = lambda *_, **__: ''";
+
         let code = unindent(&match foreign {
             Foreign::PipfileLock(ref p) => format!(
                 "
                 import io
                 import molt.pipfile_lock
                 import plette
+                {}
                 with io.open({:?}, encoding='utf-8') as f:
                     pipfile_lock = plette.Lockfile.load(f)
                 lockfile = molt.pipfile_lock.to_lock_file(pipfile_lock)
                 with io.open({:?}, 'w', encoding='utf-8') as f:
                     lockfile.dump(f)
                 ",
+                if quiet { QUIET_CODE } else { "" },
                 path_to_str!(p),
                 path_to_str!(output),
             ),
@@ -237,17 +235,98 @@ impl Interpreter {
                 "
                 import io
                 import molt.poetry_lock
+                {}
                 with io.open({:?}, encoding='utf-8') as f:
                     poetry_lock = molt.poetry_lock.load(f)
                 lockfile = molt.poetry_lock.to_lock_file(poetry_lock)
                 with io.open({:?}, 'w', encoding='utf-8') as f:
                     lockfile.dump(f)
                 ",
+                if quiet { QUIET_CODE } else { "" },
                 path_to_str!(p),
                 path_to_str!(output),
             ),
         });
 
-        Ok(self.run_molt_helper(&code)?.unwrap_or(-1))
+        let tmp_dir = TempDir::new()?;
+        vendors::Molt::populate_to(tmp_dir.path())?;
+
+        let mut cmd = self.interpret(
+            Some("utf-8"),
+            &code,
+            tmp_dir.path(),
+            empty::<&str>(),
+        )?;
+        Ok(cmd.status()?.code().unwrap_or(-1))
+    }
+
+    pub fn convert_foreign_lock(
+        &self,
+        foreign: Foreign,
+        output: &Path,
+    ) -> Result<i32> {
+        self.convert_foreign_lock_impl(foreign, output, false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::read_to_string;
+    use serde_json::from_str;
+    use tempfile::NamedTempFile;
+
+    struct Interpreters(Option<std::fs::ReadDir>);
+
+    impl Iterator for Interpreters {
+        type Item = Interpreter;
+        fn next(&mut self) -> Option<Self::Item> {
+            loop {
+                let env = self.0.as_mut()?.next()?.ok()?.path();
+                let exe = if cfg!(windows) {
+                    env.join("Scripts").join("python.exe")
+                } else {
+                    env.join("bin").join("python")
+                };
+                if exe.is_file() {
+                    let name = env.file_name().unwrap().to_string_lossy();
+                    return Some(Interpreter::new(name, exe));
+                }
+            }
+        }
+    }
+
+    fn find_interpreters() -> Interpreters {
+        let tox_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(".tox");
+        Interpreters(tox_dir.read_dir().ok())
+    }
+
+    #[test]
+    fn test_convert_foreign_lock() {
+        let samples = Path::new(env!("CARGO_MANIFEST_DIR")).join("samples");
+
+        for interpreter in find_interpreters() {
+            let dirs = samples.read_dir().expect("cannot read samples");
+            for dir in dirs {
+                let dir = dir.expect("cannot read sample").path();
+                let foreign = match Foreign::find_in(&dir) {
+                    Some(f) => f,
+                    None => { continue; },
+                };
+
+                let real_out = NamedTempFile::new().unwrap().into_temp_path();
+
+                let result = interpreter.convert_foreign_lock_impl(
+                    foreign, &real_out, true,
+                );
+                assert_eq!(result.unwrap(), 0);
+
+                let expected = dir.join("molt.lock.json");
+                assert_json_eq!(
+                    from_str(&read_to_string(&real_out).unwrap()).unwrap(),
+                    from_str(&read_to_string(&expected).unwrap()).unwrap(),
+                );
+            }
+        }
     }
 }

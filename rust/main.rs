@@ -14,6 +14,8 @@ extern crate url;
 extern crate url_serde;
 extern crate which;
 
+#[cfg(test)] #[macro_use] extern crate assert_json_diff;
+
 mod commands;
 mod entrypoints;
 mod foreign;

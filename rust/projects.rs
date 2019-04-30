@@ -248,25 +248,9 @@ impl Project {
         self.run_interpreter()?.args(args).status().map_err(Error::from)
     }
 
-    fn find_foreign(&self) -> Option<Foreign> {
-        let mut p: PathBuf;
-
-        p = self.root.join("Pipfile.lock");
-        if p.is_file() {
-            return Some(Foreign::PipfileLock(p));
-        }
-
-        p = self.root.join("poetry.lock");
-        if p.is_file() {
-            return Some(Foreign::PoetryLock(p));
-        }
-
-        None
-    }
-
     pub fn convert_foreign_lock(&self) -> Result<i32> {
         Ok(self.interpreter.convert_foreign_lock(
-            self.find_foreign().ok_or_else(|| {
+            Foreign::find_in(&self.root).ok_or_else(|| {
                 Error::ForeignLockFileNotFoundError(self.root.to_owned())
             })?,
             &self.persumed_lock_file_path(),

@@ -27,7 +27,7 @@ class _JSONEncoder(json.JSONEncoder):
         content = super(_JSONEncoder, self).encode(obj)
         if not isinstance(content, six.text_type):
             content = content.decode("utf-8")
-        content += "\n"
+        content += u"\n"
         return content
 
     def iterencode(self, obj):
@@ -35,7 +35,7 @@ class _JSONEncoder(json.JSONEncoder):
             if not isinstance(chunk, six.text_type):
                 chunk = chunk.decode("utf-8")
             yield chunk
-        yield "\n"
+        yield u"\n"
 
 
 def _read_schema():
