@@ -6,8 +6,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use tempfile::TempDir;
+use unindent::unindent;
 use which;
 
+use crate::foreign::Foreign;
 use crate::vendors;
 
 #[derive(Debug)]
@@ -46,6 +48,15 @@ impl From<which::Error> for Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+macro_rules! path_to_str {
+    ($path:expr) => {
+        {
+            let p = $path;
+            p.to_str().ok_or_else(|| Error::PathRepresentationError(p.into()))?
+        }
+    }
+}
 
 
 pub struct Interpreter {
@@ -89,14 +100,11 @@ impl Interpreter {
         io_encoding: Option<&str>,
         pkgs: &Path,
     ) -> Result<Command> {
-        let pythonpath = pkgs.to_str().ok_or_else(|| {
-            Error::PathRepresentationError(pkgs.to_owned())
-        })?;
         let mut cmd = Command::new(&self.location);
         if let Some(encoding) = io_encoding {
             cmd.env("PYTHONIOENCODING", encoding);
         }
-        cmd.env("PYTHONPATH", pythonpath);
+        cmd.env("PYTHONPATH", path_to_str!(pkgs));
         Ok(cmd)
     }
 
@@ -124,9 +132,7 @@ impl Interpreter {
             "import virtenv; virtenv.create(\
              python=None, env_dir={:?}, prompt={:?},\
              system=False, bare=True)",
-            env_dir.to_str().ok_or_else(|| {
-                Error::PathRepresentationError(env_dir.to_owned())
-            })?,
+            path_to_str!(env_dir),
             prompt,
         );
 
@@ -194,7 +200,7 @@ impl Interpreter {
         Ok(env_dir.join("lib").join(&name).join("site-packages"))
     }
 
-    pub fn run_molt_helper(&self, code: &str) -> Result<Option<i32>> {
+    fn run_molt_helper(&self, code: &str) -> Result<Option<i32>> {
         let tmp_dir = TempDir::new()?;
         vendors::Molt::populate_to(tmp_dir.path())?;
 
@@ -205,5 +211,43 @@ impl Interpreter {
             empty::<&str>(),
         )?.status()?.code();
         Ok(retcode)
+    }
+
+    pub fn convert_foreign_lock(
+        &self,
+        foreign: Foreign,
+        output: &Path,
+    ) -> Result<i32> {
+        let code = unindent(&match foreign {
+            Foreign::PipfileLock(ref p) => format!(
+                "
+                import io
+                import molt.pipfile_lock
+                import plette
+                with io.open({:?}, encoding='utf-8') as f:
+                    pipfile_lock = plette.Lockfile.load(f)
+                lockfile = molt.pipfile_lock.to_lock_file(pipfile_lock)
+                with io.open({:?}, 'w', encoding='utf-8') as f:
+                    lockfile.dump(f)
+                ",
+                path_to_str!(p),
+                path_to_str!(output),
+            ),
+            Foreign::PoetryLock(ref p) => format!(
+                "
+                import io
+                import molt.poetry_lock
+                with io.open({:?}, encoding='utf-8') as f:
+                    poetry_lock = molt.poetry_lock.load(f)
+                lockfile = molt.poetry_lock.to_lock_file(poetry_lock)
+                with io.open({:?}, 'w', encoding='utf-8') as f:
+                    lockfile.dump(f)
+                ",
+                path_to_str!(p),
+                path_to_str!(output),
+            ),
+        });
+
+        Ok(self.run_molt_helper(&code)?.unwrap_or(-1))
     }
 }

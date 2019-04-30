@@ -11,6 +11,7 @@ use serde_json;
 use unindent::unindent;
 
 use crate::entrypoints::EntryPoints;
+use crate::foreign::Foreign;
 use crate::lockfiles::Lock;
 use crate::pythons::{self, Interpreter};
 
@@ -19,9 +20,9 @@ pub enum Error {
     CommandNotFoundError(String),
     EnvironmentNotFoundError(PathBuf, String),
     EnvironmentSetupError(env::JoinPathsError),
+    ForeignLockFileNotFoundError(PathBuf),
     LockFileNotFoundError(PathBuf),
     LockFileInvalidError(serde_json::Error),
-    ProjectFileNotFoundError(PathBuf),
     ProjectNotFoundError(PathBuf),
     PythonInterpreterError(pythons::Error),
     SystemEnvironmentError(io::Error),
@@ -37,13 +38,13 @@ impl fmt::Display for Error {
                 write!(f, "environment not found for {:?} in {:?}", name, root)
             },
             Error::EnvironmentSetupError(ref e) => e.fmt(f),
+            Error::ForeignLockFileNotFoundError(ref p) => {
+                write!(f, "foreign lock file not found in directory {:?}", p)
+            },
             Error::LockFileNotFoundError(ref p) => {
                 write!(f, "lock file expected but not found at {:?}", p)
             },
             Error::LockFileInvalidError(ref e) => e.fmt(f),
-            Error::ProjectFileNotFoundError(ref p) => {
-                write!(f, "required project file not found at {:?}", p)
-            },
             Error::ProjectNotFoundError(ref p) => {
                 write!(f, "project not found in {:?}", p)
             },
@@ -78,10 +79,6 @@ impl From<pythons::Error> for Error {
 }
 
 type Result<T> = std::result::Result<T, Error>;
-
-pub enum ForeignFile {
-    PipfileLock(PathBuf),
-}
 
 pub struct Project {
     interpreter: Interpreter,
@@ -118,15 +115,6 @@ impl Project {
 
     pub fn persumed_lock_file_path(&self) -> PathBuf {
         self.root.join("molt.lock.json")
-    }
-
-    pub fn foreign_lock_file_path(&self) -> Result<ForeignFile> {
-        let p = self.root.join("Pipfile.lock");
-        if p.is_file() {
-            Ok(ForeignFile::PipfileLock(p))
-        } else {
-            Err(Error::ProjectFileNotFoundError(p))
-        }
     }
 
     pub fn read_lock_file(&self) -> Result<Lock> {
@@ -258,5 +246,30 @@ impl Project {
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
         self.run_interpreter()?.args(args).status().map_err(Error::from)
+    }
+
+    fn find_foreign(&self) -> Option<Foreign> {
+        let mut p: PathBuf;
+
+        p = self.root.join("Pipfile.lock");
+        if p.is_file() {
+            return Some(Foreign::PipfileLock(p));
+        }
+
+        p = self.root.join("poetry.lock");
+        if p.is_file() {
+            return Some(Foreign::PoetryLock(p));
+        }
+
+        None
+    }
+
+    pub fn convert_foreign_lock(&self) -> Result<i32> {
+        Ok(self.interpreter.convert_foreign_lock(
+            self.find_foreign().ok_or_else(|| {
+                Error::ForeignLockFileNotFoundError(self.root.to_owned())
+            })?,
+            &self.persumed_lock_file_path(),
+        )?)
     }
 }
