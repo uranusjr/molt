@@ -96,7 +96,8 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub(super) fn new_versioned(
+    #[cfg(test)]
+    pub fn new_versioned(
         name: &str,
         version: &str,
         source: Option<&str>,
