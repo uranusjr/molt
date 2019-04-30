@@ -101,7 +101,7 @@ def _parse_spec(name, package):
     else:
         if not v.startswith("=="):
             raise InvalidVersion(v)
-        return {"version": v[2:]}
+        return {"version": v.lstrip("=")}   # Is === possible here?
 
     raise PackageSpecifierNotSupported(package._data)
 

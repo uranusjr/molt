@@ -45,7 +45,7 @@ def load(f, encoding=None):
     """
     text = f.read()
     if encoding is not None:
-        text = f.read().decode(encoding)
+        text = text.decode(encoding)
     # Yes, this simply returns a dict. I guess it is enough since we only want
     # to convert it to molt.lock.json anyway?
     return tomlkit.parse(text)
