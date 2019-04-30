@@ -1,5 +1,5 @@
-use std::fs::{File, create_dir_all};
-use std::io::{Result, Write};
+use std::fs::{create_dir_all, write};
+use std::io::Result;
 use std::path::Path;
 
 macro_rules! populate {
@@ -13,8 +13,7 @@ macro_rules! populate {
                 if let Some(parent) = target.parent() {
                     create_dir_all(parent)?;
                 }
-                let mut f = File::create(target)?;
-                f.write_all(&data.into_owned())?;
+                write(target, data)?;
             }
             Ok(())
         }

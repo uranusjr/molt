@@ -119,11 +119,11 @@ impl Project {
 
     pub fn read_lock_file(&self) -> Result<Lock> {
         let p = self.persumed_lock_file_path();
-        if !p.is_file() {
-            return Err(Error::LockFileNotFoundError(p));
+        if p.is_file() {
+            Ok(serde_json::from_reader(BufReader::new(File::open(p)?))?)
+        } else {
+            Err(Error::LockFileNotFoundError(p))
         }
-        let r = BufReader::new(File::open(p)?);
-        serde_json::from_reader(r).map_err(Error::from)
     }
 
     pub fn command(&self, io_encoding: Option<&str>) -> Result<Command> {
