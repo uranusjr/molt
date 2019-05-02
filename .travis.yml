@@ -7,7 +7,6 @@ python:
   - '3.6'
   - '2.7'
   - '3.5'
-  - '3.4'
 
 env:
   - MOLT_BUILD_PYTHON=python
