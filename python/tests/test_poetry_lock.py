@@ -22,9 +22,9 @@ def test_to_lock_file(example_name,):
         "poetry.lock",
     )
     with io.open(poetry_lock_path, encoding="utf-8") as f:
-        poetry_lock = molt.poetry_lock.load(f)
+        poetry_lock = molt.foreign.poetry_lock.load(f)
 
-    lock = molt.poetry_lock.to_lock_file(poetry_lock)
+    lock = molt.foreign.poetry_lock.to_lock_file(poetry_lock)
 
     molt_lock_path = os.path.join(SAMPLES_ROOT, example_name, "molt.lock.json")
     with io.open(molt_lock_path, encoding="utf-8") as f:

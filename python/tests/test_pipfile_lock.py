@@ -30,17 +30,17 @@ def test_to_lock_file(example_name, editables, vcsreqs):
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        lock = molt.pipfile_lock.to_lock_file(pipfile_lock)
+        lock = molt.foreign.pipfile_lock.to_lock_file(pipfile_lock)
 
         assert len(w) == (len(editables) + len(vcsreqs))
 
         assert editables == {
             m.message.package_name for m in w
-            if m.category == molt.pipfile_lock.EditablePackageDropped
+            if m.category == molt.foreign.pipfile_lock.EditablePackageDropped
         }
         assert vcsreqs == {
             m.message.package_name for m in w
-            if m.category == molt.pipfile_lock.VCSPackageNotEditable
+            if m.category == molt.foreign.pipfile_lock.VCSPackageNotEditable
         }
 
     molt_lock_path = os.path.join(SAMPLES_ROOT, example_name, "molt.lock.json")
