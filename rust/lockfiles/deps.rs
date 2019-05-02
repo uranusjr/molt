@@ -115,17 +115,16 @@ pub(super) struct DependencyEntry {
 }
 
 impl DependencyEntry {
-    pub fn make_python<E>(
-        &self,
+    pub fn swap_out_python<E>(
+        &mut self,
         sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<Option<PythonPackage>, E>
         where E: de::Error
     {
-        match self.python {
-            None => Ok(None),
-            Some(ref p) => Ok(Some(p.make_python_package(sources, hashes)?)),
-        }
+        self.python.take().map(|p| {
+            p.into_python_package(sources, hashes)
+        }).transpose()
     }
 
     pub fn into_dependencies(self) -> HashMap<String, Option<Marker>> {
@@ -204,20 +203,6 @@ mod tests {
         fn from(v: &Marker) -> Self {
             v.0.to_vec()
         }
-    }
-
-    #[test]
-    fn test_python_entry() {
-        static JSON: &str = r#"{
-            "name": "certifi",
-            "version": "2017.7.27.1",
-            "source": "default"
-        }"#;
-
-        let entry: PythonPackageEntry = from_str(JSON).unwrap();
-        assert_eq!(entry, PythonPackageEntry::new_versioned(
-            "certifi", "2017.7.27.1", Some("default"),
-        ));
     }
 
     #[test]

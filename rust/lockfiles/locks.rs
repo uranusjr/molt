@@ -94,9 +94,9 @@ impl<'de> Deserialize<'de> for Lock {
                 // connected at this point.
                 let mut dependencies = Dependencies::new();
                 let mut links = vec![];
-                for (k, v) in dents.into_iter() {
-                    let python = v.make_python(&sources, hashes.remove(&k))?;
-                    dependencies.add_dependency(&k, python);
+                for (k, mut v) in dents.into_iter() {
+                    let p = v.swap_out_python(&sources, hashes.remove(&k))?;
+                    dependencies.add_dependency(&k, p);
                     links.push((k, v.into_dependencies()));
                 }
 

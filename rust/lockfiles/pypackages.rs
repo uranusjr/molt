@@ -80,94 +80,78 @@ impl Package {
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
+#[serde(untagged)]
+enum EntrySpecifier {
+    Version { version: String, source: Option<String> },
+    Url {
+        #[serde(with = "url_serde")] url: Url,
+        #[serde(rename = "no_verify_ssl")] trust: bool,
+    },
+    Path { path: PathBuf },
+    Vcs { #[serde(with = "url_serde")] vcs: Url, rev: String },
+}
+
+#[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct Entry {
     name: String,
-
-    #[serde(default)] version: Option<String>,
-    #[serde(default)] source: Option<String>,
-
-    #[serde(default, with = "url_serde")] url: Option<Url>,
-    #[serde(default)] no_verify_ssl: bool,
-
-    #[serde(default)] path: Option<PathBuf>,
-
-    #[serde(default, with = "url_serde")] vcs: Option<Url>,
-    #[serde(default)] rev: Option<String>,
+    #[serde(flatten)] spec: EntrySpecifier,
 }
 
 impl Entry {
-    #[cfg(test)]
-    pub fn new_versioned(
-        name: &str,
-        version: &str,
-        source: Option<&str>,
-    ) -> Self {
-        Self {
-            name: name.to_owned(),
-            version: Some(version.to_owned()),
-            source: source.map(String::from),
-            url: None,
-            no_verify_ssl: false,
-            path: None,
-            vcs: None,
-            rev: None,
-        }
-    }
-
-    pub(super) fn make_python_package<E>(
-        &self,
+    pub(super) fn into_python_package<E>(
+        self,
         sources: &Sources,
         hashes: Option<Hashes>,
     ) -> Result<Package, E>
         where E: de::Error
     {
-        let mut specifier = None;
+        let specifier = match self.spec {
+            EntrySpecifier::Version { version: v, source: s} => {
+                let source = s.map(|ref k| sources.get(k).ok_or_else(|| {
+                    de::Error::custom(format!("unresolvable source {:?}", k))
+                })).transpose()?;
+                Specifier::Version(v, source)
+            },
+            EntrySpecifier::Url { url, trust } => Specifier::Url(url, trust),
+            EntrySpecifier::Path { path } => Specifier::Path(path),
+            EntrySpecifier::Vcs { vcs, rev } => Specifier::Vcs(vcs, rev),
+        };
+        Ok(Package { name: self.name, specifier, hashes })
+    }
+}
 
-        if let Some(ref v) = self.version {
-            let source = match self.source {
-                Some(ref k) => match sources.get(&k) {
-                    Some(s) => Some(s),
-                    None => {
-                        let s = format!("unresolvable source {:?}", k);
-                        return Err(de::Error::custom(s));
-                    },
+#[cfg(test)]
+mod tests {
+    use serde_json::from_str;
+    use super::*;
+
+    impl Entry {
+        pub fn new_versioned(
+            name: &str,
+            version: &str,
+            source: Option<&str>,
+        ) -> Self {
+            Self {
+                name: name.to_owned(),
+                spec: EntrySpecifier::Version {
+                    version: version.to_owned(),
+                    source: source.map(String::from),
                 },
-                None => None,
-            };
-            specifier = Some(Specifier::Version(v.to_owned(), source));
-        }
-        if let Some(ref url) = self.url {
-            if specifier.is_some() {
-                return Err(de::Error::custom("redundant package fields"));
             }
-            specifier = Some(Specifier::Url(
-                url.to_owned(), self.no_verify_ssl,
-            ));
         }
-        if let Some(ref path) = self.path {
-            if specifier.is_some() {
-                return Err(de::Error::custom("redundant package fields"));
-            }
-            specifier = Some(Specifier::Path(path.to_owned()));
-        }
-        if let Some(ref vcs) = self.vcs {
-            if specifier.is_some() {
-                return Err(de::Error::custom("redundant package fields"));
-            }
-            let rev = match self.rev {
-                Some(ref r) => r.to_owned(),
-                None => { return Err(de::Error::missing_field("rev")); },
-            };
-            specifier = Some(Specifier::Vcs(vcs.to_owned(), rev));
-        }
+    }
 
-        match specifier {
-            Some(specifier) => Ok(Package {
-                name: self.name.clone(),
-                specifier,
-                hashes,
-            }),
-            None => Err(de::Error::custom("missing package fields")),
-        }
+    #[test]
+    fn test_entry() {
+        static JSON: &str = r#"{
+            "name": "certifi",
+            "version": "2017.7.27.1",
+            "source": "default"
+        }"#;
+
+        let entry: Entry = from_str(JSON).unwrap();
+        assert_eq!(entry, Entry::new_versioned(
+            "certifi", "2017.7.27.1", Some("default"),
+        ));
     }
 }
