@@ -13,7 +13,7 @@ class _JSONEncoder(json.JSONEncoder):
     This adds a few characteristics to the encoder:
 
     * The JSON is always prettified with indents and spaces.
-    * The output is always UTF-8-encoded text, never binary, even on Python 2.
+    * The output is ASCII-only, always text, never binary, even on Python 2.
     """
     def __init__(self):
         super(_JSONEncoder, self).__init__(
@@ -26,14 +26,14 @@ class _JSONEncoder(json.JSONEncoder):
     def encode(self, obj):
         content = super(_JSONEncoder, self).encode(obj)
         if not isinstance(content, six.text_type):
-            content = content.decode("utf-8")
+            content = content.decode("ascii")
         content += u"\n"
         return content
 
     def iterencode(self, obj):
         for chunk in super(_JSONEncoder, self).iterencode(obj):
             if not isinstance(chunk, six.text_type):
-                chunk = chunk.decode("utf-8")
+                chunk = chunk.decode("ascii")
             yield chunk
         yield u"\n"
 
