@@ -186,3 +186,54 @@ def to_lock_file(pfl):
     }
 
     return LockFile(data)
+
+
+def accounted_for(pfl, lock):
+    """Whether a lock file accounts for all information in given Pipfile.lock.
+    """
+    # Check all sources in Pipfile.lock are accounted for.
+    for k, v in _generate_sources(pfl.meta.sources):
+        try:
+            source = lock.sources[k]
+        except KeyError:
+            return False
+        if source["url"] != v["url"]:
+            return False
+        if source.get("no_verify_ssl", False) != v.get("no_verify_ssl", False):
+            return False
+
+    for section in [pfl.default, pfl.develop]:
+        for key, result, marker, package_hashes in _generate_packages(section):
+            # Check the package information match.
+            try:
+                package = lock.dependencies[key]["python"].copy()
+            except KeyError:
+                return False
+            if canonicalize_name(package.pop("name", None)) != key:
+                return False
+            result.pop("name", None)
+            if package != result:
+                return False
+
+            # Check the marker is included.
+            try:
+                dep_markers = lock.dependencies[""]["dependencies"][key]
+            except KeyError:
+                return False
+            else:
+                if marker is not None:
+                    if marker not in dep_markers:
+                        return False
+                elif dep_markers is not None:
+                    return False
+
+            # Check all hashes in Pipfile.lock are included.
+            if package_hashes:
+                try:
+                    lock_hashes = set(lock.hashes[key])
+                except KeyError:
+                    return False
+                if not (set(package_hashes) < lock_hashes):
+                    return False
+
+    return True
