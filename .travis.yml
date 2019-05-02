@@ -7,6 +7,9 @@ python:
   - '3.6'
   - '3.7'
 
+env:
+  - MOLT_BUILD_PYTHON=python
+
 cache:
   - /home/travis/.cargo
   - /home/travis/.rustup
