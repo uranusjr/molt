@@ -31,6 +31,20 @@ def _patch_functools():
         sys.modules["functools32"] = functools_lru_cache
 
 
+def _patch_enum():
+    """Consolidate enum and enum34 packages.
+
+    The enum34 package is vendored as "enum34" (instead of "enum"), and we want
+    to make it available when enum is not available from stdlib.
+    """
+    try:
+        import enum     # noqa
+    except ImportError:
+        import enum34
+        sys.modules["enum"] = enum34
+
+
 def patch():
     _patch_typing()
     _patch_functools()
+    _patch_enum()

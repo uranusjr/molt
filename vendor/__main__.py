@@ -56,6 +56,15 @@ def _unpopulate_setuptools(root):
         shutil.rmtree(target)
 
 
+def _rename_enum34(root):
+    # Rename the module installed by enum34 from "enum" to "enum34". This is
+    # needed so it does not shadow the stadlib version. Molt also contains
+    # extra code to consolidate this.
+    target = os.path.join(root, "enum")
+    if os.path.exists(target):
+        os.rename(target, os.path.join(root, "enum34"))
+
+
 def _populate_molt(src, root):
     if not os.path.exists(root):
         os.makedirs(root)
@@ -91,11 +100,14 @@ def main():
         if not os.path.exists(p):
             os.makedirs(p)
         _populate(p, requirements_txt)
+
+    _rename_enum34(os.path.join(target_root, "molt"))
     _unpopulate_setuptools(os.path.join(target_root, "molt"))
     _populate_molt(
         os.path.join(project_root, "python"),
         os.path.join(target_root, "molt"),
     )
+
     _populate_pep425(os.path.join(target_root, "pep425"))
 
 
