@@ -48,11 +48,20 @@ def _populate(root, requirements_txt):
             _remove(path)
 
 
+def _unpopulate_setuptools(root):
+    # Remove setuptools from molt vendoring because we don't need it. We only
+    # want pkg_resources, which is part of the distribution.
+    target = os.path.join(root, "setuptools")
+    if os.path.exists(target):
+        shutil.rmtree(target)
+
+
 def _populate_molt(src, root):
     if not os.path.exists(root):
         os.makedirs(root)
     target = os.path.join(root, "molt")
-    shutil.rmtree(target)
+    if os.path.exists(target):
+        shutil.rmtree(target)
     shutil.copytree(os.path.join(src, "molt"), target)
 
 
@@ -82,6 +91,7 @@ def main():
         if not os.path.exists(p):
             os.makedirs(p)
         _populate(p, requirements_txt)
+    _unpopulate_setuptools(os.path.join(target_root, "molt"))
     _populate_molt(
         os.path.join(project_root, "python"),
         os.path.join(target_root, "molt"),

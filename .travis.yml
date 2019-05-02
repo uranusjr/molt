@@ -1,0 +1,26 @@
+language: python
+
+python:
+  - '2.7'
+  - '3.4'
+  - '3.5'
+  - '3.6'
+  - '3.7'
+
+cache:
+  - /home/travis/.cargo
+  - /home/travis/.rustup
+  - cargo
+  - pip
+
+before_install:
+  - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
+     | sh -s -- --default-toolchain=stable -y"
+  - export PATH=$HOME/.cargo/bin:$PATH
+
+install:
+  - pip install tox-travis
+
+script:
+  - tox
+  - cargo test

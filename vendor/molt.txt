@@ -1,7 +1,11 @@
+enum34==1.1.6
+backports.functools_lru_cache==1.5
 jsonschema==3.0.1
 packaging==19.0
 plette==0.2.2
 pyparsing==2.4.0
-requirements-parser==0.2.0
 six==1.12.0
 tomlkit==0.5.3
+
+# We only really want pkg_resources; vendor script processes this further.
+setuptools==41.0.1

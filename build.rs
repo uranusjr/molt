@@ -30,27 +30,12 @@ enum VendorEntry<'a> {
     Script(&'a str),
 }
 
-static VENDOR_SCRIPT: &str = "__main__.py";
-
 fn find_vendor_entry(p: &Path) -> Option<VendorEntry> {
-    // The vendor script.
-    if p.file_name()? == VENDOR_SCRIPT {
-        return Some(VendorEntry::Script(VENDOR_SCRIPT));
+    match p.extension()?.to_str()? {
+        "py" => Some(VendorEntry::Script(p.file_stem()?.to_str()?)),
+        "txt" => Some(VendorEntry::Requirements(p.file_stem()?.to_str()?)),
+        _ => None,
     }
-
-    // Requirements files.
-    if p.extension()?.to_str()? != "txt" {
-        return None;
-    }
-    let mut parts = p.file_stem()?.to_str()?.split('-');
-    if parts.next()? != "requirements" {
-        return None;
-    }
-    let name = parts.next()?;
-    if parts.next().is_some() {
-        return None;
-    }
-    Some(VendorEntry::Requirements(name))
 }
 
 fn python_command() -> Command {

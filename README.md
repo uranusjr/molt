@@ -1,5 +1,7 @@
 # Molt: Dependency and environment manager for Python projects
 
+[![Build Status](https://travis-ci.com/uranusjr/molt.svg?branch=master)](https://travis-ci.com/uranusjr/molt)
+
 Work in progress.
 
 
