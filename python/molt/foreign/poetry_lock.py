@@ -5,7 +5,7 @@ import tomlkit
 
 from packaging.utils import canonicalize_name
 
-from .locks import LockFile
+from molt.locks import LockFile
 
 
 class PoetryLockError(Exception):

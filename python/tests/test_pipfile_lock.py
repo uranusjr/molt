@@ -7,7 +7,7 @@ import warnings
 
 import plette
 
-import molt.pipfile_lock
+import molt.foreign.pipfile_lock
 
 from _testcommons import SAMPLES_ROOT
 

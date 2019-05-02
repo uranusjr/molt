@@ -3,7 +3,7 @@ import warnings
 
 from packaging.utils import canonicalize_name
 
-from .locks import LockFile
+from molt.locks import LockFile
 
 
 SUPPORTED_SPECS = {6}

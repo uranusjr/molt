@@ -4,7 +4,7 @@ import io
 import json
 import os
 
-import molt.poetry_lock
+import molt.foreign.poetry_lock
 
 from _testcommons import SAMPLES_ROOT
 

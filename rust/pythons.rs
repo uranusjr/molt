@@ -220,12 +220,12 @@ impl Interpreter {
             Foreign::PipfileLock(ref p) => format!(
                 "
                 import io
-                import molt.pipfile_lock
+                import molt.foreign.pipfile_lock
                 import plette
                 {}
                 with io.open({:?}, encoding='utf-8') as f:
                     pipfile_lock = plette.Lockfile.load(f)
-                lockfile = molt.pipfile_lock.to_lock_file(pipfile_lock)
+                lockfile = molt.foreign.pipfile_lock.to_lock_file(pipfile_lock)
                 with io.open({:?}, 'w', encoding='utf-8') as f:
                     lockfile.dump(f)
                 ",
@@ -236,11 +236,11 @@ impl Interpreter {
             Foreign::PoetryLock(ref p) => format!(
                 "
                 import io
-                import molt.poetry_lock
+                import molt.foreign.poetry_lock
                 {}
                 with io.open({:?}, encoding='utf-8') as f:
-                    poetry_lock = molt.poetry_lock.load(f)
-                lockfile = molt.poetry_lock.to_lock_file(poetry_lock)
+                    poetry_lock = molt.foreign.poetry_lock.load(f)
+                lockfile = molt.foreign.poetry_lock.to_lock_file(poetry_lock)
                 with io.open({:?}, 'w', encoding='utf-8') as f:
                     lockfile.dump(f)
                 ",
