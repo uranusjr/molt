@@ -150,6 +150,11 @@ def _generate_sources(sources):
 
 
 def to_lock_file(pfl):
+    """Convert a Pipfile.lock to a Molt lock file.
+
+    `pfl` should be a `plette.Lockfile` instance. Returns an instance of
+    `molt.locks.LockFile`.
+    """
     if pfl.meta.pipfile_spec not in SUPPORTED_SPECS:
         raise PipfileSpecNotSupported(pfl.meta.pipfile_spec)
 

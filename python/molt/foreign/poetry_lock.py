@@ -51,11 +51,6 @@ def load(f, encoding=None):
     return tomlkit.parse(text)
 
 
-Package = collections.namedtuple("Package", ["name", "version"])
-
-Source = collections.namedtuple("Source", ["name", "url"])
-
-
 def _parse_spec(package):
     try:
         source = package["source"]
@@ -81,6 +76,9 @@ def _parse_spec(package):
     return {"version": version}
 
 
+_Source = collections.namedtuple("_Source", ["name", "url"])
+
+
 def _parse_source(package):
     try:
         source = package["source"]
@@ -88,7 +86,7 @@ def _parse_source(package):
         return None
     if source["type"] != "legacy":
         return None
-    return Source(source["reference"], source["url"])
+    return _Source(source["reference"], source["url"])
 
 
 def _generate_packages(poetry_lock):
@@ -148,6 +146,11 @@ def _generate_dependencies(poetry_lock):
 
 
 def to_lock_file(poetry_lock):
+    """Convert a poetry.lock to a Molt lock file.
+
+    `poetry_lock` should be an instance returned by `load()`. Returns an
+    instance of `molt.locks.LockFile`.
+    """
     hashes = {
         canonicalize_name(k): sorted("sha256:{}".format(h) for h in v)
         for k, v in poetry_lock["metadata"]["hashes"].items()
