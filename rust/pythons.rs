@@ -26,7 +26,8 @@ impl fmt::Display for Error {
             Error::LookupError(ref e) => e.fmt(f),
             Error::InvocationError(ref e) => e.fmt(f),
             Error::IncompatibleInterpreterError(ref s) => {
-                write!(f, "interpreter {:?} has no compatibility tags", s)
+                const N: &str = env!("CARGO_PKG_NAME");
+                write!(f, "interpreter {:?} not compatible for {}", s, N)
             },
             Error::PathRepresentationError(ref p) => {
                 write!(f, "{:?} not representable", p)
@@ -77,7 +78,9 @@ impl Interpreter {
     pub fn discover<I, S>(name: &str, program: S, args: I) -> Result<Self>
         where I: IntoIterator<Item=S>, S: AsRef<OsStr>
     {
-        let code = "from __future__ import print_function; \
+        // TODO: Remove pip dependency check after we implement out own
+        // package installing logic.
+        let code = "from __future__ import print_function; import pip; \
                     import sys; print(sys.executable, end='')";
         let out = Command::new(&which::which(program)?)
             .env("PYTHONIOENCODING", "utf-8")
@@ -86,8 +89,12 @@ impl Interpreter {
             .arg(code)
             .output()?;
 
-        let location = PathBuf::from(String::from_utf8(out.stdout).unwrap());
-        Ok(Self::new(name.to_string(), location))
+        if out.status.success() {
+            let loc = PathBuf::from(String::from_utf8(out.stdout).unwrap());
+            Ok(Self::new(name, loc))
+        } else {
+            Err(Error::IncompatibleInterpreterError(name.to_owned()))
+        }
     }
 
     pub fn name(&self) -> &str {
