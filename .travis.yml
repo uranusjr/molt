@@ -19,8 +19,11 @@ before_install:
   - export PATH=$HOME/.cargo/bin:$PATH
 
 install:
-  - pip install tox-travis
+  - pip install flake8 tox-travis
+  - rustup component add clippy
 
 script:
+  - flake8 ./python
   - tox
+  - cargo clippy
   - cargo test
