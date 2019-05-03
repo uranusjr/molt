@@ -2,6 +2,12 @@ dist: xenial
 
 language: python
 
+stages:
+  - lint
+  - primary
+  - rusty
+  - secondary
+
 python:
   - '3.7'
   - '3.6'
@@ -18,18 +24,49 @@ cache:
   - cargo
   - pip
 
-before_install:
-  - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
-     | sh -s -- --default-toolchain=stable -y"
-  - export PATH=$HOME/.cargo/bin:$PATH
+jobs:
+  fast_finish: true
+  include:
+    - stage: lint
+      name: Python 3 Lint
+      python: '3.7'
+      install: pip install black flake8
+      script:
+        - black --check python vendor
+        - flake8 python vendor
+    - name: Python 2 Lint
+      python: '2.7'
+      install: pip install flake8
+      script: flake8 python vendor
+    - name: Rust Lint
+      python: '3.7'
+      before_install:
+        - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
+          | sh -s -- --default-toolchain=stable -y"
+        - export PATH=$HOME/.cargo/bin:$PATH
+      install: rustup component add clippy
+      script: cargo clippy
 
-install:
-  - pip install black flake8 tox-travis
-  - rustup component add clippy
+    - stage: primary
+      python: '3.7'
+      install: pip install tox-travis
+      script: tox
+    - python: '2.7'
+      install: pip install tox-travis
+      script: tox
 
-script:
-  - flake8 python vendor
-  - black --check python vendor
-  - tox
-  - cargo clippy
-  - cargo test
+    - stage: rusty
+      python: '3.7'
+      before_install:
+        - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
+          | sh -s -- --default-toolchain=stable -y"
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script: cargo test
+
+    - stage: secondary
+      python: '3.6'
+      install: pip install tox-travis
+      script: tox
+    - python: '3.5'
+      install: pip install tox-travis
+      script: tox
