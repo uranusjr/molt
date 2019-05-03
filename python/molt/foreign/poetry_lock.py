@@ -20,7 +20,7 @@ class SourceDropped(UserWarning):
     def __init__(self, package_name):
         super(SourceDropped, self).__init__(
             "Source dropped for package {!r} (invalid in this context)".format(
-                package_name,
+                package_name
             )
         )
         self.package_name = package_name
@@ -30,7 +30,7 @@ class DuplicateSourceDropped(UserWarning):
     def __init__(self, source, dropping_url):
         super(DuplicateSourceDropped, self).__init__(
             "Source URL {!r} dropped (duplicate name {!r} to {!r})".format(
-                dropping_url, source.name, source.url,
+                dropping_url, source.name, source.url
             )
         )
         self.source = source
@@ -104,17 +104,12 @@ def _generate_packages(poetry_lock):
             else:
                 result["source"] = source.name
 
-        yield (
-            canonicalize_name(name),
-            result,
-            source,
-        )
+        yield (canonicalize_name(name), result, source)
 
 
 def _generate_dependencies(poetry_lock):
     undepended_packages = {
-        canonicalize_name(p["name"]): p
-        for p in poetry_lock["package"]
+        canonicalize_name(p["name"]): p for p in poetry_lock["package"]
     }
     packages_markers = {
         canonicalize_name(p["name"]): p["marker"].replace('"', "'")
@@ -154,7 +149,7 @@ def to_lock_file(poetry_lock):
     hashes = {
         canonicalize_name(k): sorted("sha256:{}".format(h) for h in v)
         for k, v in poetry_lock["metadata"]["hashes"].items()
-        if v    # Poetry produces an empty list for non-hash-required packages.
+        if v  # Poetry produces an empty list for non-hash-required packages.
     }
 
     sources = {}
@@ -163,9 +158,9 @@ def to_lock_file(poetry_lock):
     for key, result, src in _generate_packages(poetry_lock):
         if src is not None:
             if src.name in sources and sources[src.name]["url"] != src.url:
-                warnings.warn(DuplicateSourceDropped(
-                    src, sources[src.name].url,
-                ))
+                warnings.warn(
+                    DuplicateSourceDropped(src, sources[src.name].url)
+                )
             sources[src.name] = {"url": src.url}
         dependencies[key] = {"python": result}
 
@@ -177,10 +172,6 @@ def to_lock_file(poetry_lock):
         markers = [marker] if marker else None
         dependencies[dependent]["dependencies"][depended] = markers
 
-    data = {
-        "sources": sources,
-        "dependencies": dependencies,
-        "hashes": hashes,
-    }
+    data = {"sources": sources, "dependencies": dependencies, "hashes": hashes}
 
     return LockFile(data)

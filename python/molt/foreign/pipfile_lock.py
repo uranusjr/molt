@@ -101,7 +101,7 @@ def _parse_spec(name, package):
     else:
         if not v.startswith("=="):
             raise InvalidVersion(v)
-        return {"version": v.lstrip("=")}   # Is === possible here?
+        return {"version": v.lstrip("=")}  # Is === possible here?
 
     raise PackageSpecifierNotSupported(package._data)
 
@@ -188,7 +188,7 @@ def to_lock_file(pfl):
     return LockFile(data)
 
 
-def accounted_for(pfl, lock):
+def is_accounted_for(pfl, lock):
     """Whether a lock file accounts for all information in given Pipfile.lock.
     """
     # Check all sources in Pipfile.lock are accounted for.

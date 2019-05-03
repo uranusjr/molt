@@ -15,12 +15,10 @@ class _JSONEncoder(json.JSONEncoder):
     * The JSON is always prettified with indents and spaces.
     * The output is ASCII-only, always text, never binary, even on Python 2.
     """
+
     def __init__(self):
         super(_JSONEncoder, self).__init__(
-            ensure_ascii=True,
-            indent=4,
-            separators=(",", ": "),
-            sort_keys=True,
+            ensure_ascii=True, indent=4, separators=(",", ": "), sort_keys=True
         )
 
     def encode(self, obj):
@@ -46,13 +44,13 @@ def _read_schema():
 
 _SCHEMA = _read_schema()
 
-_SOURCE_SCHEMA = next(iter(
-    _SCHEMA["properties"]["sources"]["patternProperties"].values()
-))
+_SOURCE_SCHEMA = next(
+    iter(_SCHEMA["properties"]["sources"]["patternProperties"].values())
+)
 
-_DEPENDENCY_SCHEMA = next(iter(
-    _SCHEMA["properties"]["dependencies"]["patternProperties"].values()
-))
+_DEPENDENCY_SCHEMA = next(
+    iter(_SCHEMA["properties"]["dependencies"]["patternProperties"].values())
+)
 
 _PYTHONPACKAGE_SCHEMA = _DEPENDENCY_SCHEMA["properties"]["python"]
 

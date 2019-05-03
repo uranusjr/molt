@@ -13,7 +13,7 @@ def _patch_typing():
     anything at runtime.
     """
     try:
-        import typing   # noqa
+        import typing  # noqa
     except ImportError:
         sys.modules["typing"] = _MockTyping()
 
@@ -25,9 +25,10 @@ def _patch_functools():
     we improvise.
     """
     try:
-        from functools import lru_cache     # noqa
+        from functools import lru_cache  # noqa
     except ImportError:
         from backports import functools_lru_cache
+
         sys.modules["functools32"] = functools_lru_cache
 
 
@@ -38,9 +39,10 @@ def _patch_enum():
     to make it available when enum is not available from stdlib.
     """
     try:
-        import enum     # noqa
+        import enum  # noqa
     except ImportError:
         import enum34
+
         sys.modules["enum"] = enum34
 
 

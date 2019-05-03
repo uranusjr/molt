@@ -24,16 +24,13 @@ def test_source_invalid():
     [
         {"name": "pip", "version": "19.1"},
         {"name": "pip", "version": "19.1", "source": "private"},
-
         {"name": "pip", "url": "https://mydomain.localhost/pip-19.1.tar.gz"},
         {
             "name": "pip",
             "url": "https://mydomain.localhost/pip-19.1.tar.gz",
             "no_verify_ssl": True,
         },
-
         {"name": "pip", "path": "../../pip-19.1.tar.gz"},
-
         {
             "name": "pip",
             "vcs": "git+https://github.com/pypa/pip.git",
@@ -50,10 +47,8 @@ def test_python_package(data):
     [
         # Missing specifier.
         {"name": "pip"},
-
         # Missing version.
         {"name": "pip", "source": "private"},
-
         # Missing VCS revision.
         {"name": "pip", "vcs": "git+https://github.com/pypa/pip.git"},
     ],
@@ -63,13 +58,7 @@ def test_python_package_invalid(data):
         molt.locks.Source(data)
 
 
-@pytest.mark.parametrize(
-    "example_name",
-    [
-        "pipenv",
-        "virtenv",
-    ],
-)
+@pytest.mark.parametrize("example_name", ["pipenv", "virtenv"])
 def test_validate_sample_lock_files(example_name):
     lock_path = os.path.join(SAMPLES_ROOT, example_name, "molt.lock.json")
     with io.open(lock_path, encoding="utf-8") as f:

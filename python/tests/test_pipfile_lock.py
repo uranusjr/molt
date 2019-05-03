@@ -21,9 +21,7 @@ from _testcommons import SAMPLES_ROOT
 )
 def test_to_lock_file(example_name, editables, vcsreqs):
     pipfile_lock_path = os.path.join(
-        SAMPLES_ROOT,
-        example_name,
-        "Pipfile.lock",
+        SAMPLES_ROOT, example_name, "Pipfile.lock"
     )
     with io.open(pipfile_lock_path, encoding="utf-8") as f:
         pipfile_lock = plette.Lockfile.load(f)
@@ -35,14 +33,21 @@ def test_to_lock_file(example_name, editables, vcsreqs):
         assert len(w) == (len(editables) + len(vcsreqs))
 
         assert editables == {
-            m.message.package_name for m in w
+            m.message.package_name
+            for m in w
             if m.category == molt.foreign.pipfile_lock.EditablePackageDropped
         }
         assert vcsreqs == {
-            m.message.package_name for m in w
+            m.message.package_name
+            for m in w
             if m.category == molt.foreign.pipfile_lock.VCSPackageNotEditable
         }
 
     molt_lock_path = os.path.join(SAMPLES_ROOT, example_name, "molt.lock.json")
     with io.open(molt_lock_path, encoding="utf-8") as f:
         assert lock._data == json.load(f)
+
+
+@pytest.mark.parametrize("example_name", ["pipenv", "virtenv"])
+def test_is_accounted_for():
+    pass

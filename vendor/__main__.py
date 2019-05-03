@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import sys
+
 try:
     import urllib.request as urllib_request
 except ImportError:
@@ -29,20 +30,30 @@ BLACKLIST_PATTERNS = [
 
 def _populate(root, requirements_txt):
     env = os.environ.copy()
-    env.update({
-        "PIP_NO_COLOR": "false",
-        "PIP_NO_COMPILE": "false",
-        "PIP_PROGRESS_BAR": "off",
-        "PIP_REQUIRE_VIRTUALENV": "false",
-    })
-    subprocess.check_call([
-        sys.executable, "-m", "pip", "install",
-        "--disable-pip-version-check",
-        "--target", root,
-        "--requirement", requirements_txt,
-        "--no-deps",
-        "--upgrade",
-    ], env=env)
+    env.update(
+        {
+            "PIP_NO_COLOR": "false",
+            "PIP_NO_COMPILE": "false",
+            "PIP_PROGRESS_BAR": "off",
+            "PIP_REQUIRE_VIRTUALENV": "false",
+        }
+    )
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--target",
+            root,
+            "--requirement",
+            requirements_txt,
+            "--no-deps",
+            "--upgrade",
+        ],
+        env=env,
+    )
     for entry in BLACKLIST_PATTERNS:
         for path in glob.glob(os.path.join(root, entry)):
             _remove(path)
@@ -60,9 +71,12 @@ def _rename_enum34(root):
     # Rename the module installed by enum34 from "enum" to "enum34". This is
     # needed so it does not shadow the stadlib version. Molt also contains
     # extra code to consolidate this.
-    target = os.path.join(root, "enum")
+    source = os.path.join(root, "enum")
+    target = os.path.join(root, "enum34")
     if os.path.exists(target):
-        os.rename(target, os.path.join(root, "enum34"))
+        shutil.rmtree(target)
+    if os.path.exists(source):
+        os.rename(source, target)
 
 
 def _populate_molt(src, root):
@@ -78,7 +92,7 @@ def _populate_pep425(root):
     if not os.path.exists(root):
         os.makedirs(root)
     fn, _ = urllib_request.urlretrieve(
-        "https://github.com/brettcannon/pep425/archive/master.zip",
+        "https://github.com/brettcannon/pep425/archive/master.zip"
     )
     with zipfile.ZipFile(fn) as zf:
         data = zf.read("pep425-master/pep425.py")
@@ -104,12 +118,11 @@ def main():
     _rename_enum34(os.path.join(target_root, "molt"))
     _unpopulate_setuptools(os.path.join(target_root, "molt"))
     _populate_molt(
-        os.path.join(project_root, "python"),
-        os.path.join(target_root, "molt"),
+        os.path.join(project_root, "python"), os.path.join(target_root, "molt")
     )
 
     _populate_pep425(os.path.join(target_root, "pep425"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
