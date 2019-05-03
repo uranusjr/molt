@@ -47,16 +47,12 @@ jobs:
         apt:
           packages:
             - python3.5
-            - python3.6
-            - python3.7
             - python-virtualenv
       env:
-        - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
+        - MOLT_BUILD_PYTHON=./.tox/py35/bin/python
       install:
         - virtualenv --python=python2.7 ./.tox/py27
         - virtualenv --python=python3.5 ./.tox/py35
-        - virtualenv --python=python3.6 ./.tox/py36
-        - virtualenv --python=python3.7 ./.tox/py37
       script:
         - cargo clippy
         - cargo test
@@ -76,16 +72,12 @@ jobs:
         apt:
           packages:
             - python3.5
-            - python3.6
-            - python3.7
             - python-virtualenv
       env:
-        - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
+        - MOLT_BUILD_PYTHON=./.tox/py35/bin/python
       install:
         - virtualenv --python=python2.7 ./.tox/py27
         - virtualenv --python=python3.5 ./.tox/py35
-        - virtualenv --python=python3.6 ./.tox/py36
-        - virtualenv --python=python3.7 ./.tox/py37
       script: cargo test
     - language: python
       python: '3.8-dev'
