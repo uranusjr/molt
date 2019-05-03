@@ -51,6 +51,7 @@ jobs:
       env:
         - MOLT_BUILD_PYTHON=./.tox/py35/bin/python
       install:
+        - rustup component add clippy
         - virtualenv --python=python2.7 ./.tox/py27
         - virtualenv --python=python3.5 ./.tox/py35
       script:
@@ -76,6 +77,7 @@ jobs:
       env:
         - MOLT_BUILD_PYTHON=./.tox/py35/bin/python
       install:
+        - rustup component add clippy
         - virtualenv --python=python2.7 ./.tox/py27
         - virtualenv --python=python3.5 ./.tox/py35
       script: cargo test
