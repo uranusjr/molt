@@ -35,8 +35,9 @@ def _patch_functools():
 def _patch_enum():
     """Consolidate enum and enum34 packages.
 
-    The enum34 package is vendored as "enum34" (instead of "enum"), and we want
-    to make it available when enum is not available from stdlib.
+    The enum34 package is vendored as "enum34" (instead of "enum") because we
+    don't want it to shadow the built-in module (other built-in stuffs break).
+    We make it available only when enum is not othereise available.
     """
     try:
         import enum  # noqa
