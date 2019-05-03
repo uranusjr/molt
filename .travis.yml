@@ -6,10 +6,13 @@ stages:
   - secondary
 
 cache:
-  - ./target
-  - ./tox
-  - cargo
+  directories:
+    - /home/travis/.cargo
+    - ./tox
   - pip
+
+before_cache:
+  - rm -rf /home/travis/.cargo/registry
 
 jobs:
   fast_finish: true
