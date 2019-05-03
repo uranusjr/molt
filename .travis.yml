@@ -3,7 +3,6 @@ dist: xenial
 stages:
   - lint
   - primary
-  - rusty
   - secondary
 
 cache:
@@ -14,6 +13,10 @@ cache:
 
 jobs:
   fast_finish: true
+  allow_failures:
+    - python: '3.8-dev'
+    - rust: nightly
+
   include:
     - stage: lint
       name: Python 3 Lint
@@ -28,17 +31,6 @@ jobs:
       python: '2.7'
       install: pip install flake8
       script: flake8 python vendor
-    - name: Rust Lint
-      language: rust
-      rust: stable
-      addons:
-        apt:
-          packages:
-            - python-pip
-      env:
-        - MOLT_BUILD_PYTHON=python
-      install: rustup component add clippy
-      script: cargo clippy
 
     - stage: primary
       language: python
@@ -62,7 +54,9 @@ jobs:
         - virtualenv --python=python3.5 ./.tox/py35
         - virtualenv --python=python3.6 ./.tox/py36
         - virtualenv --python=python3.7 ./.tox/py37
-      script: cargo test
+      script:
+        - cargo clippy
+        - cargo test
 
     - stage: secondary
       language: python
@@ -71,10 +65,6 @@ jobs:
       script: tox
     - language: python
       python: '3.5'
-      install: pip install tox-travis
-      script: tox
-    - language: python
-      python: '3.8-dev'
       install: pip install tox-travis
       script: tox
     - language: rust
@@ -92,3 +82,7 @@ jobs:
         - virtualenv --python=python3.6 ./.tox/py36
         - virtualenv --python=python3.7 ./.tox/py37
       script: cargo test
+    - language: python
+      python: '3.8-dev'
+      install: pip install tox-travis
+      script: tox
