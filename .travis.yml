@@ -46,6 +46,9 @@ jobs:
       addons:
         apt:
           packages:
+            - python3.5
+            - python3.6
+            - python3.7
             - python-virtualenv
       env:
         - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
@@ -72,7 +75,9 @@ jobs:
       addons:
         apt:
           packages:
-            - python-pip
+            - python3.5
+            - python3.6
+            - python3.7
             - python-virtualenv
       env:
         - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
