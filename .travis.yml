@@ -9,7 +9,7 @@ cache:
   directories:
     - /home/travis/.cargo
     - ./tox
-  - pip
+  pip: true
 
 before_cache:
   - rm -rf /home/travis/.cargo/registry
