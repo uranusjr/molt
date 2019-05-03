@@ -2,7 +2,7 @@ extern crate walkdir;
 extern crate which;
 
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 enum ModuleEntry {
