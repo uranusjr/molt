@@ -1,26 +1,14 @@
 dist: xenial
 
-language: python
-
 stages:
   - lint
   - primary
   - rusty
   - secondary
 
-python:
-  - '3.7'
-  - '3.6'
-  - '2.7'
-  - '3.5'
-
-env:
-  - MOLT_BUILD_PYTHON=python
-
 cache:
-  - /home/travis/.cargo
-  - /home/travis/.rustup
   - ./target
+  - ./tox
   - cargo
   - pip
 
@@ -29,44 +17,78 @@ jobs:
   include:
     - stage: lint
       name: Python 3 Lint
+      language: python
       python: '3.7'
       install: pip install black flake8
       script:
         - black --check python vendor
         - flake8 python vendor
     - name: Python 2 Lint
+      language: python
       python: '2.7'
       install: pip install flake8
       script: flake8 python vendor
     - name: Rust Lint
-      python: '3.7'
-      before_install:
-        - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
-          | sh -s -- --default-toolchain=stable -y"
-        - export PATH=$HOME/.cargo/bin:$PATH
+      language: rust
+      rust: stable
+      addons:
+        apt:
+          packages:
+            - python-pip
+      env:
+        - MOLT_BUILD_PYTHON=python
       install: rustup component add clippy
       script: cargo clippy
 
     - stage: primary
+      language: python
       python: '3.7'
       install: pip install tox-travis
       script: tox
-    - python: '2.7'
+    - language: python
+      python: '2.7'
       install: pip install tox-travis
       script: tox
-
-    - stage: rusty
-      python: '3.7'
-      before_install:
-        - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
-          | sh -s -- --default-toolchain=stable -y"
-        - export PATH=$HOME/.cargo/bin:$PATH
+    - language: rust
+      rust: stable
+      addons:
+        apt:
+          packages:
+            - python-virtualenv
+      env:
+        - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
+      install:
+        - virtualenv --python=python2.7 ./.tox/py27
+        - virtualenv --python=python3.5 ./.tox/py35
+        - virtualenv --python=python3.6 ./.tox/py36
+        - virtualenv --python=python3.7 ./.tox/py37
       script: cargo test
 
     - stage: secondary
+      language: python
       python: '3.6'
       install: pip install tox-travis
       script: tox
-    - python: '3.5'
+    - language: python
+      python: '3.5'
       install: pip install tox-travis
       script: tox
+    - language: python
+      python: '3.8-dev'
+      install: pip install tox-travis
+      script: tox
+    - language: rust
+      rust: nightly
+      addons:
+        apt:
+          packages:
+            - python-pip
+            - python-virtualenv
+      env:
+        - MOLT_BUILD_PYTHON=./.tox/py37/bin/python
+      install:
+        - virtualenv --python=python2.7 ./.tox/py27
+        - virtualenv --python=python3.5 ./.tox/py35
+        - virtualenv --python=python3.6 ./.tox/py36
+        - virtualenv --python=python3.7 ./.tox/py37
+      script: cargo test
