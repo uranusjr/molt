@@ -14,6 +14,7 @@ env:
 cache:
   - /home/travis/.cargo
   - /home/travis/.rustup
+  - ./target
   - cargo
   - pip
 
@@ -23,11 +24,12 @@ before_install:
   - export PATH=$HOME/.cargo/bin:$PATH
 
 install:
-  - pip install flake8 tox-travis
+  - pip install black flake8 tox-travis
   - rustup component add clippy
 
 script:
-  - flake8 ./python
+  - flake8 python vendor
+  - black --check python vendor
   - tox
   - cargo clippy
   - cargo test

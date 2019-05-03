@@ -123,16 +123,30 @@ cargo build --release
 This gives you a binary in `target/release`. Copy it somewhere in your PATH.
 
 
-## Run tests
+## Run lints/tests
 
-Rust tests:
+Rust requirements:
+
+* [Clippy]
 
 ```
+cargo clippy
 cargo test
 ```
 
-Python tests:
+Python requirements:
+
+* [Flake8]
+* [Black]
+* [Tox]
 
 ```
+flake8 python vendor
+black python vendor
 tox
 ```
+
+[Clippy]: https://github.com/rust-lang/rust-clippy
+[Flake8]: http://flake8.pycqa.org/en/latest/
+[Black]: https://github.com/python/black
+[Tox]: https://tox.readthedocs.io/en/latest/

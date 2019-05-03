@@ -29,7 +29,11 @@ class PackageSpecifierNotSupported(PipfileLockError, ValueError):
     pass
 
 
-class EditablePackageDropped(UserWarning):
+class PipfileLockWarning(UserWarning):
+    pass
+
+
+class EditablePackageDropped(PipfileLockWarning):
     def __init__(self, name):
         super(EditablePackageDropped, self).__init__(
             "Editable package {!r} dropped".format(name)
@@ -37,10 +41,10 @@ class EditablePackageDropped(UserWarning):
         self.package_name = name
 
 
-class VCSPackageNotEditable(UserWarning):
+class VCSPackageNotEditable(PipfileLockWarning):
     def __init__(self, name):
         super(VCSPackageNotEditable, self).__init__(
-            "VCS package {!r} converted to non-editable".format(name)
+            "VCS package {!r} converted as non-editable".format(name)
         )
         self.package_name = name
 
@@ -188,6 +192,44 @@ def to_lock_file(pfl):
     return LockFile(data)
 
 
+def _is_package_accounted_for(package_info, section, lock):
+    key, result, marker, package_hashes = package_info
+
+    # Check the package information match.
+    try:
+        package = lock.dependencies[key]["python"].copy()
+    except KeyError:
+        return False
+    if canonicalize_name(package.pop("name", None)) != key:
+        return False
+    result.pop("name", None)
+    if package != result:
+        return False
+
+    # Check the marker is included.
+    try:
+        dep_markers = lock.dependencies[section]["dependencies"][key]
+    except KeyError:
+        return False
+    else:
+        if marker is not None:
+            if marker not in dep_markers:
+                return False
+        elif dep_markers is not None:
+            return False
+
+    # Check all hashes in Pipfile.lock are included.
+    if package_hashes:
+        try:
+            lock_hashes = set(lock.hashes[key])
+        except KeyError:
+            return False
+        if not (set(package_hashes) <= lock_hashes):
+            return False
+
+    return True
+
+
 def is_accounted_for(pfl, lock):
     """Whether a lock file accounts for all information in given Pipfile.lock.
     """
@@ -202,38 +244,12 @@ def is_accounted_for(pfl, lock):
         if source.get("no_verify_ssl", False) != v.get("no_verify_ssl", False):
             return False
 
-    for section in [pfl.default, pfl.develop]:
-        for key, result, marker, package_hashes in _generate_packages(section):
-            # Check the package information match.
-            try:
-                package = lock.dependencies[key]["python"].copy()
-            except KeyError:
-                return False
-            if canonicalize_name(package.pop("name", None)) != key:
-                return False
-            result.pop("name", None)
-            if package != result:
-                return False
-
-            # Check the marker is included.
-            try:
-                dep_markers = lock.dependencies[""]["dependencies"][key]
-            except KeyError:
-                return False
-            else:
-                if marker is not None:
-                    if marker not in dep_markers:
-                        return False
-                elif dep_markers is not None:
-                    return False
-
-            # Check all hashes in Pipfile.lock are included.
-            if package_hashes:
-                try:
-                    lock_hashes = set(lock.hashes[key])
-                except KeyError:
-                    return False
-                if not (set(package_hashes) < lock_hashes):
-                    return False
+    # Check all packages in Pipfile.lock have equivalents.
+    for info in _generate_packages(pfl.default):
+        if not _is_package_accounted_for(info, "", lock):
+            return False
+    for info in _generate_packages(pfl.develop):
+        if not _is_package_accounted_for(info, "[dev]", lock):
+            return False
 
     return True

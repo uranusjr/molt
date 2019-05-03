@@ -82,6 +82,22 @@ class Dependencies(plette.models.DataViewMapping):
 
 
 class LockFile(plette.models.DataView):
+    """A Molt format lock file.
+    """
+
+    @classmethod
+    def load(cls, f, encoding=None):
+        """Load a lock file from file.
+
+        If `encoding` is None, `f` should be opened in UTF-8 text mode.
+
+        If `encoding` is set, `f` should be opened in binary mode. The lock
+        file will be decoded with the specified encoding.
+        """
+        if encoding is None:
+            return cls(json.load(f))
+        return cls(json.loads(f.read().decode(encoding)))
+
     @classmethod
     def validate(cls, data):
         jsonschema.validate(instance=data, schema=_SCHEMA)
