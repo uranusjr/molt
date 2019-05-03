@@ -2,7 +2,9 @@ import io
 import json
 import os
 
+import attr
 import jsonschema
+import packaging.utils
 import plette.models
 import six
 
@@ -65,16 +67,89 @@ class Sources(plette.models.DataViewMapping):
     item_class = Source
 
 
+@attr.s()
+class VersionSpec(object):
+    version = attr.ib()
+    source = attr.ib()
+
+
+@attr.s()
+class URLSpec(object):
+    url = attr.ib()
+    no_verify_ssl = attr.ib()
+
+
+@attr.s()
+class PathSpec(object):
+    path = attr.ib()
+
+
+@attr.s()
+class VCSSpec(object):
+    vcs = attr.ib()
+    rev = attr.ib()
+
+
 class PythonPackage(plette.models.DataView):
     @classmethod
     def validate(cls, data):
         jsonschema.validate(instance=data, schema=_PYTHONPACKAGE_SCHEMA)
+
+    def __eq__(self, other):
+        if not isinstance(other, PythonPackage):
+            return False
+        return (
+            self.canonical_name == other.canonical_name
+            and self.spec == other.spec
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @property
+    def name(self):
+        return self._data["name"]
+
+    @property
+    def canonical_name(self):
+        return packaging.utils.canonicalize_name(self._data["name"])
+
+    @property
+    def spec(self):
+        # The inner data is validated at this point, so the checks are simple.
+        if "version" in self._data:
+            return VersionSpec(
+                version=self._data["version"],
+                source=self._data.get("source", None),
+            )
+        if "url" in self._data:
+            return URLSpec(
+                url=self._data["url"],
+                no_verify_ssl=self._data.get("no_verify_ssl", False),
+            )
+        if "path" in self._data:
+            return PathSpec(path=self._data["path"])
+        if "vcs" in self._data:
+            return VCSSpec(vcs=self._data["vcs"], rev=self._data["rev"])
+        raise RuntimeError("should not reach here")
 
 
 class Dependency(plette.models.DataView):
     @classmethod
     def validate(cls, data):
         jsonschema.validate(instance=data, schema=_DEPENDENCY_SCHEMA)
+
+    @property
+    def python(self):
+        try:
+            data = self._data["python"]
+        except KeyError:
+            return None
+        return PythonPackage(data)
+
+    @property
+    def dependencies(self):
+        return self._data.get("dependencies", [])
 
 
 class Dependencies(plette.models.DataViewMapping):

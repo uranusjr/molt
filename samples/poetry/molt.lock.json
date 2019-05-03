@@ -10,10 +10,15 @@
                 ],
                 "html5lib": null,
                 "jsonschema": null,
+                "pathlib2": [
+                    "python_version >= '2.7' and python_version < '2.8' or python_version >= '3.4' and python_version < '3.5' or python_version < '3.6'"
+                ],
                 "pkginfo": null,
+                "pyparsing": null,
                 "requests-toolbelt": null,
                 "shellingham": null,
-                "tomlkit": null
+                "tomlkit": null,
+                "virtualenv": null
             }
         },
         "[dev]": {
@@ -303,7 +308,15 @@
         "markdown": {
             "dependencies": {
                 "setuptools": null
-            },
+            }
+        },
+        "markdown@0": {
+            "python": {
+                "name": "markdown",
+                "version": "3.0.1"
+            }
+        },
+        "markdown@1": {
             "python": {
                 "name": "markdown",
                 "version": "3.1"
@@ -326,7 +339,8 @@
                 "livereload": [
                     "python_version >= '2.7.9' and python_version < '2.8.0' or python_version >= '3.4' and python_version < '4.0'"
                 ],
-                "markdown": null,
+                "markdown@0": null,
+                "markdown@1": null,
                 "pyyaml": null,
                 "tornado": [
                     "python_version >= '2.7.9' and python_version < '2.8.0' or python_version >= '3.4' and python_version < '4.0'"
@@ -355,7 +369,15 @@
         "more-itertools": {
             "dependencies": {
                 "six": null
-            },
+            }
+        },
+        "more-itertools@0": {
+            "python": {
+                "name": "more-itertools",
+                "version": "5.0.0"
+            }
+        },
+        "more-itertools@1": {
             "python": {
                 "name": "more-itertools",
                 "version": "7.0.0"
@@ -471,7 +493,8 @@
         },
         "pymdown-extensions": {
             "dependencies": {
-                "markdown": null
+                "markdown@0": null,
+                "markdown@1": null
             },
             "python": {
                 "name": "pymdown-extensions",
@@ -503,7 +526,10 @@
                 "funcsigs": [
                     "python_version < '3.0'"
                 ],
-                "more-itertools": [
+                "more-itertools@0": [
+                    "python_version > '2.7'"
+                ],
+                "more-itertools@1": [
                     "python_version > '2.7'"
                 ],
                 "pathlib2": [
@@ -845,7 +871,13 @@
             "sha256:6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799",
             "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"
         ],
-        "markdown": [
+        "markdown@0": [
+            "sha256:c00429bd503a47ec88d5e30a751e147dcb4c6889663cd3e2ba0afe858e009baa",
+            "sha256:d02e0f9b04c500cde6637c11ad7c72671f359b87b9fe924b2383649d8841db7c",
+            "sha256:fc4a6f69a656b8d858d7503bda633f4dd63c2d70cf80abdc6eafa64c4ae8c250",
+            "sha256:fe463ff51e679377e3624984c829022e2cfb3be5518726b06f608a07a3aad680"
+        ],
+        "markdown@1": [
             "sha256:c00429bd503a47ec88d5e30a751e147dcb4c6889663cd3e2ba0afe858e009baa",
             "sha256:d02e0f9b04c500cde6637c11ad7c72671f359b87b9fe924b2383649d8841db7c",
             "sha256:fc4a6f69a656b8d858d7503bda633f4dd63c2d70cf80abdc6eafa64c4ae8c250",
@@ -889,7 +921,14 @@
             "sha256:5ce3c71c5545b472da17b72268978914d0252980348636840bd34a00b5cc96c1",
             "sha256:b158b6df76edd239b8208d481dc46b6afd45a846b7812ff0ce58971cf5bc8bba"
         ],
-        "more-itertools": [
+        "more-itertools@0": [
+            "sha256:2112d2ca570bb7c3e53ea1a35cd5df42bb0fd10c45f0fb97178679c3c03d64c7",
+            "sha256:38a936c0a6d98a38bcc2d03fdaaedaba9f412879461dd2ceff8d37564d6522e4",
+            "sha256:c0a5785b1109a6bd7fac76d6837fd1feca158e54e521ccd2ae8bfe393cc9d4fc",
+            "sha256:c3e4748ba1aad8dba30a4886b0b1a2004f9a863837b8654e7059eebf727afa5a",
+            "sha256:fe7a7cae1ccb57d33952113ff4fa1bc5f879963600ed74918f1236e212ee50b9"
+        ],
+        "more-itertools@1": [
             "sha256:2112d2ca570bb7c3e53ea1a35cd5df42bb0fd10c45f0fb97178679c3c03d64c7",
             "sha256:38a936c0a6d98a38bcc2d03fdaaedaba9f412879461dd2ceff8d37564d6522e4",
             "sha256:c0a5785b1109a6bd7fac76d6837fd1feca158e54e521ccd2ae8bfe393cc9d4fc",

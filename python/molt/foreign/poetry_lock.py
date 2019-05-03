@@ -1,8 +1,10 @@
 import collections
+import sys
 import warnings
 
 import tomlkit
 
+from packaging.specifiers import SpecifierSet
 from packaging.utils import canonicalize_name
 
 from molt.locks import LockFile
@@ -16,6 +18,10 @@ class PackageSpecifierNotSupported(PoetryLockError, ValueError):
     pass
 
 
+class SourceNameDuplicated(PoetryLockError):
+    pass
+
+
 class SourceDropped(UserWarning):
     def __init__(self, package_name):
         super(SourceDropped, self).__init__(
@@ -24,17 +30,6 @@ class SourceDropped(UserWarning):
             )
         )
         self.package_name = package_name
-
-
-class DuplicateSourceDropped(UserWarning):
-    def __init__(self, source, dropping_url):
-        super(DuplicateSourceDropped, self).__init__(
-            "Source URL {!r} dropped (duplicate name {!r} to {!r})".format(
-                dropping_url, source.name, source.url
-            )
-        )
-        self.source = source
-        self.dropping_url = dropping_url
 
 
 def load(f, encoding=None):
@@ -49,6 +44,13 @@ def load(f, encoding=None):
     # Yes, this simply returns a dict. I guess it is enough since we only want
     # to convert it to molt.lock.json anyway?
     return tomlkit.parse(text)
+
+
+def _supports_this_python(requires_python):
+    if requires_python is None or requires_python == "*":
+        return True
+    spec = SpecifierSet(requires_python)
+    return ".".join(str(x) for x in sys.version_info[:3]) in spec
 
 
 def _parse_spec(package):
@@ -107,8 +109,19 @@ def _generate_packages(poetry_lock):
         yield (canonicalize_name(name), result, source)
 
 
+def _remove_if_same_section(top_level_packages, dependent, depended_name):
+    try:
+        depended = top_level_packages[depended_name]
+    except KeyError:
+        return
+    # The depended does not need to be a top-level if it's in the same section.
+    # It will be collected when the dependant is traversed.
+    if depended["category"] == dependent["category"]:
+        del top_level_packages[depended_name]
+
+
 def _generate_dependencies(poetry_lock):
-    undepended_packages = {
+    top_level_packages = {
         canonicalize_name(p["name"]): p for p in poetry_lock["package"]
     }
     packages_markers = {
@@ -120,11 +133,12 @@ def _generate_dependencies(poetry_lock):
     for package_data in poetry_lock["package"]:
         for dep in package_data.get("dependencies", ()):
             dep = canonicalize_name(dep)
-            undepended_packages.pop(dep, None)
+            _remove_if_same_section(top_level_packages, package_data, dep)
             package_name = canonicalize_name(package_data["name"])
             yield package_name, dep, packages_markers.get(dep)
 
-    for package_data in undepended_packages.values():
+    # A package is a top-level dependency if it is not referenced by anyone.
+    for package_data in top_level_packages.values():
         if package_data.get("optional"):
             continue
         if package_data["category"] == "main":
@@ -154,24 +168,82 @@ def to_lock_file(poetry_lock):
 
     sources = {}
     dependencies = {}
+    aliases = {}
 
+    # Generate sources and packages information in depenency entries.
     for key, result, src in _generate_packages(poetry_lock):
         if src is not None:
             if src.name in sources and sources[src.name]["url"] != src.url:
-                warnings.warn(
-                    DuplicateSourceDropped(src, sources[src.name].url)
-                )
+                raise SourceNameDuplicated(src.name)
             sources[src.name] = {"url": src.url}
-        dependencies[key] = {"python": result}
 
+        # If there are no duplicates, good, insert by the package name.
+        if key not in aliases:
+            aliases[key] = []
+            dependencies[key] = {"python": result}
+            continue
+
+        # If there is an duplicate, move the previous entry to an alias.
+        alias1 = "{}@{}".format(key, len(aliases[key]))
+        dependencies[alias1] = dependencies.pop(key)
+        aliases[key].append(alias1)
+
+        # And record this new entry with another alias.
+        alias2 = "{}@{}".format(key, len(aliases[key]))
+        dependencies[alias2] = {"python": result}
+        aliases[key].append(alias2)
+
+        # Move the hashes too.
+        hashes[alias1] = hashes[alias2] = hashes.pop(key)
+
+    # Link the dependencies of each entry.
     for dependent, depended, marker in _generate_dependencies(poetry_lock):
         if dependent not in dependencies:
             dependencies[dependent] = {"dependencies": {}}
         elif "dependencies" not in dependencies[dependent]:
             dependencies[dependent]["dependencies"] = {}
         markers = [marker] if marker else None
-        dependencies[dependent]["dependencies"][depended] = markers
+        for k in aliases.get(depended) or [depended]:
+            dependencies[dependent]["dependencies"][k] = markers
 
     data = {"sources": sources, "dependencies": dependencies, "hashes": hashes}
 
     return LockFile(data)
+
+
+def is_accounted_for(poetry_lock, lock):
+    """Whether a lock file accounts for all information in given poetry.lock.
+
+    It is too involved to compare a poetry.lock directly, so we take the easy
+    way out: generate a new Molt lock, and compare it with the existing. Maybe
+    we can improve this in the future.
+    """
+    new_lock = to_lock_file(poetry_lock)
+
+    for key, src in new_lock.sources.items():
+        try:
+            source = lock.sources[key]
+        except KeyError:
+            return False
+        if source.url != src.url:
+            return False
+
+    for key, dep in new_lock.dependencies.items():
+        try:
+            dependency = lock.dependencies[key]
+        except KeyError:
+            return False
+        if dep.python != dependency.python:
+            return False
+        if dep.dependencies != dependency.dependencies:
+            return False
+
+    for key, hs in new_lock.hashes.items():
+        try:
+            hashes = lock.hashes[key]
+        except KeyError:
+            return False
+        if not (set(hs) <= set(hashes)):
+            return False
+
+    return True
