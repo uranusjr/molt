@@ -19,10 +19,10 @@ def _patch_typing():
 
 
 def _patch_functools():
-    """Inject lru_cache into functools for TOMLKit.
+    """Inject lru_cache into functools for TOMLKit and jsonschema.
 
-    TOMLKit detects functools32 by default, but that is not vendorable, so
-    we improvise.
+    They always use `functools32.lru_cache` on Python 2 (instead of using
+    feature detection [sign]). functools32 is not vendorable, so we improvise.
     """
     try:
         from functools import lru_cache  # noqa
