@@ -46,7 +46,25 @@ def _patch_enum():
         sys.modules["enum"] = enum34
 
 
+def _patch_pkg_resources():
+    """jsonschema wants to read its installation record, but we don't have it.
+
+    Patch `pkg_resources.get_distribution()` to return a fake record.
+    """
+    import pkg_resources
+
+    pkg_resources_get_distribution = pkg_resources.get_distribution
+
+    def get_distribution(*args, **kwargs):
+        if args[0] == "jsonschema":
+            return pkg_resources.Distribution()
+        return pkg_resources_get_distribution(*args, **kwargs)
+
+    pkg_resources.get_distribution = get_distribution
+
+
 def patch():
     _patch_typing()
     _patch_functools()
     _patch_enum()
+    _patch_pkg_resources()
