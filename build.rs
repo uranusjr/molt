@@ -2,7 +2,7 @@ extern crate walkdir;
 extern crate which;
 
 use std::env;
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 
 enum ModuleEntry {
@@ -40,7 +40,7 @@ fn find_vendor_entry(p: &Path) -> Option<VendorEntry> {
 
 fn python_command() -> Command {
     let s = env::var("MOLT_BUILD_PYTHON")
-        .map(|v| Path::new(&v).to_path_buf())
+        .map(PathBuf::from)
         .or_else(|_| which::which("py"))
         .or_else(|_| which::which("python3"))
         .or_else(|_| which::which("python"))
@@ -53,8 +53,7 @@ fn python_command() -> Command {
 }
 
 fn main() {
-    let root = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let root = Path::new(&root);
+    let root = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     if let Some(s) = root.join("target").to_str() {
         println!("cargo:rereun-if-changed={}", s);
