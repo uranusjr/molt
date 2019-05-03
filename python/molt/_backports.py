@@ -57,7 +57,7 @@ def _patch_pkg_resources():
 
     def get_distribution(*args, **kwargs):
         if args[0] == "jsonschema":
-            return pkg_resources.Distribution()
+            return pkg_resources.Distribution(version="")
         return pkg_resources_get_distribution(*args, **kwargs)
 
     pkg_resources.get_distribution = get_distribution
